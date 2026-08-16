@@ -335,9 +335,8 @@ const QimenUtil = {
 };
 
 // ============================================================
-// 三、CalendarAdapter (适配 OogoCalendar 新历法核心)
+// 三、CalendarAdapter (强制跨日终极版)
 // ============================================================
-
 const CalendarAdapter = {
   getDayGanZhi(year, month, day) {
     const solar = OogoCalendar.Solar.fromYmdHms(year, month, day, 12, 0, 0);
@@ -349,9 +348,23 @@ const CalendarAdapter = {
   },
 
   getFullChart(year, month, day, hour, min, sec = 0) {
-    const solar = OogoCalendar.Solar.fromYmdHms(year, month, day, hour, min, sec);
+    // ★ 核心拦截：彻底废掉“夜子时”，只要 >= 23 点，八字和排盘强制推到第二天！
+    let baziY = year, baziM = month, baziD = day, baziH = hour;
+    if (hour >= 23) {
+        let nextD = new Date(year, month - 1, day + 1);
+        baziY = nextD.getFullYear();
+        baziM = nextD.getMonth() + 1;
+        baziD = nextD.getDate();
+        baziH = 0; // 当作第二天早子时，确保日柱、时柱全部跨日
+    }
+
+    const solar = OogoCalendar.Solar.fromYmdHms(baziY, baziM, baziD, baziH, min, sec);
     const lunar = OogoCalendar.Lunar.fromSolar(solar);
-    const prevJieQi = lunar.getPrevJieQi();
+    
+    // 节气交接时间必须按真实时间算，不能推到第二天，防止错位
+    const origSolar = OogoCalendar.Solar.fromYmdHms(year, month, day, hour, min, sec);
+    const origLunar = OogoCalendar.Lunar.fromSolar(origSolar);
+    const prevJieQi = origLunar.getPrevJieQi();
     
     return {
       fourPillars: {
@@ -364,7 +377,7 @@ const CalendarAdapter = {
         solarTerm: prevJieQi.getName(),
         solarTermTime: prevJieQi.getSolar().toYmdHms()
       },
-      // 👇 这里的 palaces 数组是为了防止飞盘报错，提前给引擎铺垫的底子
+      // 飞盘防报错底座
       palaces: [1, 2, 3, 4, 5, 6, 7, 8, 9].map(pos => ({ position: pos }))
     };
   },
@@ -373,12 +386,10 @@ const CalendarAdapter = {
     const solar = OogoCalendar.Solar.fromYmdHms(year, month, day, 12, 0, 0);
     const lunar = OogoCalendar.Lunar.fromSolar(solar);
     const jq = lunar.getPrevJieQi();
-    return { 
-      name: jq.getName(), 
-      exactTime: jq.getSolar().toYmdHms() 
-    };
+    return { name: jq.getName(), exactTime: jq.getSolar().toYmdHms() };
   }
 };
+
 
 
 
