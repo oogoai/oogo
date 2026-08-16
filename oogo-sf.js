@@ -364,6 +364,8 @@ const CalendarAdapter = {
         solarTerm: prevJieQi.getName(),
         solarTermTime: prevJieQi.getSolar().toYmdHms()
       }
+    // 👇 补上这行！给飞盘引擎铺好九宫的底子，飞盘就不会报错了 👇
+      palaces: [1, 2, 3, 4, 5, 6, 7, 8, 9].map(pos => ({ position: pos }))  
     };
   },
 
