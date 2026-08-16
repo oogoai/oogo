@@ -464,55 +464,54 @@
       }
     }
 
+        // 监听引擎是否加载完毕 (更改为监听 OogoCalendar)
     let checkEngine = setInterval(function() {
-      if (typeof ThreeMeta !== 'undefined') {
+      if (typeof OogoCalendar !== 'undefined' && typeof OogoQimen !== 'undefined') {
         clearInterval(checkEngine);
         setNowTime(); 
       }
     }, 200);
 
+    // 动态更新节气显示条 (改用 OogoCalendar 原生 API 获取节气)
     function updateDynamicInfo() {
-      if (typeof ThreeMeta === 'undefined') return;
+      if (typeof OogoCalendar === 'undefined') return;
       try {
         let dDate = getEffectiveDate();
-        let currentTimestamp = dDate.getTime();
+        let solar = OogoCalendar.Solar.fromYmdHms(
+          dDate.getFullYear(), dDate.getMonth() + 1, dDate.getDate(), 
+          dDate.getHours(), dDate.getMinutes(), 0
+        );
+        let lunar = OogoCalendar.Lunar.fromSolar(solar);
         
-        function getJQAt(ts) {
-            let d = new Date(ts);
-            return ThreeMeta.QimenChart.fromSolar(d.getFullYear(), d.getMonth()+1, d.getDate(), d.getHours(), d.getMinutes(), 0).timeInfo.solarTerm;
+        // 1. 获取当前节气与时间
+        let currentJQInfo = lunar.getPrevJieQi();
+        let currentJQName = currentJQInfo.getName();
+        let startSolar = currentJQInfo.getSolar();
+        
+        // 2. 推算下一个节气（直接加16天去找下个节气交节时间）
+        let nextD = new Date(dDate.getTime() + 16 * 24 * 3600 * 1000);
+        let nextSolarObj = OogoCalendar.Solar.fromYmdHms(
+          nextD.getFullYear(), nextD.getMonth() + 1, nextD.getDate(),
+          nextD.getHours(), nextD.getMinutes(), 0
+        );
+        let nextLunar = OogoCalendar.Lunar.fromSolar(nextSolarObj);
+        let nextJQInfo = nextLunar.getPrevJieQi();
+
+        // 格式化输出函数
+        function formatS(s) { 
+          return s.getYear() + '.' + pad(s.getMonth()) + '.' + pad(s.getDay()) + ' ' + pad(s.getHour()) + ':' + pad(s.getMinute()); 
         }
-        
-        let currentJQ = getJQAt(currentTimestamp);
-        let step = 24 * 3600 * 1000; 
-        
-        let startProbe = currentTimestamp;
-        while (getJQAt(startProbe) === currentJQ) { startProbe -= step; }
-        let left = startProbe, right = startProbe + step;
-        while (right - left > 60000) { 
-            let mid = Math.floor((left + right) / 2);
-            if (getJQAt(mid) === currentJQ) { right = mid; } else { left = mid; }
-        }
-        let startTime = new Date(right);
-        
-        let endProbe = currentTimestamp;
-        while (getJQAt(endProbe) === currentJQ) { endProbe += step; }
-        let nextJQ = getJQAt(endProbe);
-        left = endProbe - step; right = endProbe;
-        while (right - left > 60000) {
-            let mid = Math.floor((left + right) / 2);
-            if (getJQAt(mid) === nextJQ) { right = mid; } else { left = mid; }
-        }
-        let endTime = new Date(right);
-        
-        function formatD(d) { return d.getFullYear() + '.' + pad(d.getMonth()+1) + '.' + pad(d.getDate()) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes()); }
         
         document.getElementById('jieqiRange').innerHTML = 
-          currentJQ + ' ' + formatD(startTime) + 
+          currentJQName + ' ' + formatS(startSolar) + 
           '<span style="color:var(--text-gray); margin:0 3px;">~</span>' + 
-          nextJQ + ' ' + formatD(endTime);
+          nextJQInfo.getName() + ' ' + formatS(nextJQInfo.getSolar());
 
-      } catch (e) { console.error(e); }
+      } catch (e) { 
+        console.error("更新节气栏出错: ", e); 
+      }
     }
+
 
     const stems = ["甲","乙","丙","丁","戊","己","庚","辛","壬","癸"];
     const branches = ["子","丑","寅","卯","辰","巳","午","未","申","酉","戌","亥"];
