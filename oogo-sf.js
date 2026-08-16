@@ -465,26 +465,16 @@ const QimenSolarTerm = {
 };
 
 // ============================================================
-// 五、置闰法与拆补法
+// 五、置闰法与拆补法 (彻底修复子时跨日引擎割裂BUG)
 // ============================================================
 
 const OogoZhiRun = {
-  createDate(y, m, d) {
-    return new Date(y, m - 1, d, 12, 0, 0, 0); 
-  },
-  addDays(date, days) {
-    let d = new Date(date.getTime());
-    d.setDate(d.getDate() + days);
-    return d;
-  },
-  diffDays(d1, d2) {
-    return Math.round((d1.getTime() - d2.getTime()) / 86400000);
-  },
+  createDate(y, m, d) { return new Date(y, m - 1, d, 12, 0, 0, 0); },
+  addDays(date, days) { let d = new Date(date.getTime()); d.setDate(d.getDate() + days); return d; },
+  diffDays(d1, d2) { return Math.round((d1.getTime() - d2.getTime()) / 86400000); },
   
   getDayGanzhiIndex(date) {
-    let y = date.getFullYear();
-    let m = date.getMonth() + 1;
-    let d = date.getDate();
+    let y = date.getFullYear(), m = date.getMonth() + 1, d = date.getDate();
     let chart = CalendarAdapter.getDayGanZhi(y, m, d);
     return QimenUtil.findStemBranchIndex(chart.stem, chart.branch);
   },
@@ -493,25 +483,19 @@ const OogoZhiRun = {
     let m = isWinter ? 12 : 6;
     let targetTerm = isWinter ? "冬至" : "夏至";
     for (let d = 15; d <= 25; d++) {
-        let chart = CalendarAdapter.getFullChart(year, m, d, 23, 59);
-        if (chart.timeInfo && chart.timeInfo.solarTerm === targetTerm) {
-            let prevChart = CalendarAdapter.getFullChart(year, m, d - 1, 23, 59);
-            if (prevChart.timeInfo && prevChart.timeInfo.solarTerm !== targetTerm) {
-                return this.createDate(year, m, d);
-            }
+        let chart = CalendarAdapter.getSolarTermInfo(year, m, d);
+        if (chart.name === targetTerm) {
+            let prevChart = CalendarAdapter.getSolarTermInfo(year, m, d - 1);
+            if (prevChart.name !== targetTerm) return this.createDate(year, m, d);
         }
     }
     return this.createDate(year, m, 21);
   },
 
   getAnchorUpperYuan(solsticeDate) {
-    let baseTime = solsticeDate.getTime();
     for (let offset = -9; offset <= 5; offset++) {
         let d = this.addDays(solsticeDate, offset);
-        let gzIdx = this.getDayGanzhiIndex(d);
-        if (gzIdx % 15 === 0) {
-            return d;
-        }
+        if (this.getDayGanzhiIndex(d) % 15 === 0) return d;
     }
     return solsticeDate;
   },
@@ -519,43 +503,35 @@ const OogoZhiRun = {
   getTermStartDateExact(termName, targetDate) {
     for (let d = -30; d <= 30; d++) {
         let testDate = this.addDays(targetDate, d);
-        let chart = CalendarAdapter.getFullChart(
-            testDate.getFullYear(), testDate.getMonth() + 1, testDate.getDate(), 23, 59
-        );
-        if (chart.timeInfo && chart.timeInfo.solarTerm === termName) {
+        let chart = CalendarAdapter.getSolarTermInfo(testDate.getFullYear(), testDate.getMonth() + 1, testDate.getDate());
+        if (chart.name === termName) {
             let prevDate = this.addDays(testDate, -1);
-            let prevChart = CalendarAdapter.getFullChart(
-                prevDate.getFullYear(), prevDate.getMonth() + 1, prevDate.getDate(), 23, 59
-            );
-            if (prevChart.timeInfo && prevChart.timeInfo.solarTerm !== termName) {
-                return testDate;
-            }
+            let prevChart = CalendarAdapter.getSolarTermInfo(prevDate.getFullYear(), prevDate.getMonth() + 1, prevDate.getDate());
+            if (prevChart.name !== termName) return testDate;
         }
     }
     return targetDate; 
   },
 
-   calculate(year, month, day, hour, min, sec = 0) {
-    let tYear = year, tMonth = month, tDay = day;
+  calculate(year, month, day, hour, min, sec = 0) {
+    // 1. 获取四柱 (OogoCalendar会自动把 23:00 后的日柱推到第二天)
+    const fullChart = CalendarAdapter.getFullChart(year, month, day, hour, min, sec);
     
-    // 【同步处理】：如果是晚子时，历法基准和四柱排盘全部跨日推后一天
+    // 2. 强制同步引擎基准日期！如果 >= 23 点，引擎计算局数的日期必须跟着 +1 天！
+    let tYear = year, tMonth = month, tDay = day;
     if (hour >= 23) {
-        let nextDay = new Date(year, month - 1, day);
-        nextDay.setDate(nextDay.getDate() + 1);
-        tYear = nextDay.getFullYear();
-        tMonth = nextDay.getMonth() + 1;
-        tDay = nextDay.getDate();
-        // 注意：这里是否需要把 hour 从 23 改成 0，取决于你的 CalendarAdapter 底层库是否能自动识别 23点为新一天的子时。
+        let nextD = new Date(year, month - 1, day + 1);
+        tYear = nextD.getFullYear();
+        tMonth = nextD.getMonth() + 1;
+        tDay = nextD.getDate();
     }
-
-    // 这样拿到的 fullChart，它的四柱就已经是第二天（跨日后）的正确干支了
-    const fullChart = CalendarAdapter.getFullChart(tYear, tMonth, tDay, hour, min, sec);
     let targetDate = this.createDate(tYear, tMonth, tDay);
 
-    let SS_prev = this.getSolsticeDate(year - 1, false);
-    let WS_prev = this.getSolsticeDate(year - 1, true);
-    let SS_curr = this.getSolsticeDate(year, false);
-    let WS_curr = this.getSolsticeDate(year, true);
+    // 3. 所有节气推算，必须使用 tYear，防止跨年除夕夜出现严重BUG
+    let SS_prev = this.getSolsticeDate(tYear - 1, false);
+    let WS_prev = this.getSolsticeDate(tYear - 1, true);
+    let SS_curr = this.getSolsticeDate(tYear, false);
+    let WS_curr = this.getSolsticeDate(tYear, true);
 
     let A_SS_prev = this.getAnchorUpperYuan(SS_prev);
     let A_WS_prev = this.getAnchorUpperYuan(WS_prev);
@@ -576,21 +552,13 @@ const OogoZhiRun = {
     let baseAnchor = null;
 
     if (FT_D.getTime() < A_WS_prev.getTime()) {
-        isYang = false;
-        termsList = QimenConst.YIN_TERMS;
-        baseAnchor = A_SS_prev;
+        isYang = false; termsList = QimenConst.YIN_TERMS; baseAnchor = A_SS_prev;
     } else if (FT_D.getTime() < A_SS_curr.getTime()) {
-        isYang = true;
-        termsList = QimenConst.YANG_TERMS;
-        baseAnchor = A_WS_prev;
+        isYang = true; termsList = QimenConst.YANG_TERMS; baseAnchor = A_WS_prev;
     } else if (FT_D.getTime() < A_WS_curr.getTime()) {
-        isYang = false;
-        termsList = QimenConst.YIN_TERMS;
-        baseAnchor = A_SS_curr;
+        isYang = false; termsList = QimenConst.YIN_TERMS; baseAnchor = A_SS_curr;
     } else {
-        isYang = true;
-        termsList = QimenConst.YANG_TERMS;
-        baseAnchor = A_WS_curr;
+        isYang = true; termsList = QimenConst.YANG_TERMS; baseAnchor = A_WS_curr;
     }
 
     let diffDays = this.diffDays(FT_D, baseAnchor);
@@ -598,13 +566,9 @@ const OogoZhiRun = {
 
     let isTrueRun = false;
     let termIndex = k;
-    if (k >= 12) {
-        termIndex = 11; 
-        isTrueRun = true;
-    }
+    if (k >= 12) { termIndex = 11; isTrueRun = true; }
 
     let termName = termsList[termIndex];
-
     let daysSinceFT = this.diffDays(targetDate, FT_D);
     let yuanIndex = Math.floor(daysSinceFT / 5); 
     let yuanName = ["上元", "中元", "下元"][yuanIndex];
@@ -635,15 +599,7 @@ const OogoZhiRun = {
         relation: relation,
         superShenDays: superShenDays,
         isTrueRun: isTrueRun,
-        debugInfo: {
-            targetDate: QimenUtil.dateKey(targetDate),
-            FT_D: QimenUtil.dateKey(FT_D),
-            baseAnchor: QimenUtil.dateKey(baseAnchor),
-            diffDays: diffDays,
-            periods: k,
-            astroStart: QimenUtil.dateKey(astroStart),
-            isTrueRun: isTrueRun
-        }
+        debugInfo: {}
     };
   }
 };
@@ -651,7 +607,17 @@ const OogoZhiRun = {
 const OogoChaiBu = {
   calculate(year, month, day, hour, min, sec = 0) {
     const fullChart = CalendarAdapter.getFullChart(year, month, day, hour, min, sec);
-    const date = QimenUtil.dateOnly(year, month, day);
+    
+    // 拆补法同样需要处理跨日
+    let tYear = year, tMonth = month, tDay = day;
+    if (hour >= 23) {
+        let nextD = new Date(year, month - 1, day + 1);
+        tYear = nextD.getFullYear();
+        tMonth = nextD.getMonth() + 1;
+        tDay = nextD.getDate();
+    }
+    const date = QimenUtil.dateOnly(tYear, tMonth, tDay);
+    
     const term = QimenSolarTerm.findPreviousTerm(date);
     const termName = term.name;
     const termDate = term.date;
@@ -674,17 +640,11 @@ const OogoChaiBu = {
       termDate,
       yuanIndex,
       yuanName: ["上元", "中元", "下元"][yuanIndex],
-      debugInfo: {
-        termName,
-        termDate: QimenUtil.dateKey(termDate),
-        daysFromTerm: days,
-        yuanIndex,
-        yuanName: ["上元", "中元", "下元"][yuanIndex],
-        juNumber: table[yuanIndex]
-      }
+      debugInfo: {}
     };
   }
 };
+
 
 // ============================================================
 // 六、空亡、驿马与标签增强
