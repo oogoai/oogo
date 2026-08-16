@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>OOGO 真奇门排盘</title>
+  <title>天机奇门</title>
   <link rel="apple-touch-icon" href="./apple-touch-icon.png?v=9">
   <link rel="icon" type="image/png" href="./apple-touch-icon.png?v=9">
   <link rel="manifest" href="./manifest.json">
@@ -235,7 +235,7 @@
         </div>
 
         <div class="sub-ctrl">
-          <div class="sub-text" style="cursor: pointer;" onclick="isChartGenerated = false; renderDefaultBoard();" title="返回初始画面">☯️ OOGO 奇门遁甲</div>
+          <div class="sub-text" style="cursor: pointer;" onclick="isChartGenerated = false; renderDefaultBoard();" title="返回初始画面">☯️ OOGO 天机奇门</div>
           <div class="select-group">
             <select id="methodSelect">
               <option value="zhirun" selected>置闰法</option>
@@ -707,8 +707,8 @@
               if (!isWechat && navigator.canShare && navigator.canShare({ files: [file] })) {
                 navigator.share({
                   files: [file],
-                  title: '奇门排盘',
-                  text: '我的奇门排盘截图'
+                  title: '天机奇门',
+                  text: '我的天机奇门截图'
                 }).then(() => {
                   showToast('✅ 操作成功');
                 }).catch((error) => {
