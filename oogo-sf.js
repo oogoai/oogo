@@ -100,8 +100,8 @@ const QimenConst = {
     "螣",
     "阴",
     "合",
-    "勾",
-    "朱",
+    "白",
+    "玄",
     "地",
     "天"
   ],
@@ -334,43 +334,33 @@ const QimenUtil = {
   }
 };
 
-// Oogo 完美历法适配器 (对接本地 oogo.js)
+// ============================================================
+// 三、CalendarAdapter
+// ============================================================
+
 const CalendarAdapter = {
-  // 获取某天中午12点的日柱干支 (用来推算大符头)
   getDayGanZhi(year, month, day) {
-    const solar = OogoCalendar.Solar.fromYmdHms(year, month, day, 12, 0, 0);
-    const lunar = solar.getLunar();
-    return {
-      stem: lunar.getDayGanExact(),   
-      branch: lunar.getDayZhiExact()  
-    };
+    const c = ThreeMeta.QimenChart.fromSolar(year, month, day, 12, 0, 0);
+    return c.fourPillars.day;
   },
 
-  // 获取精准到分秒的四柱八字与节气信息
   getFullChart(year, month, day, hour, min, sec = 0) {
-    const solar = OogoCalendar.Solar.fromYmdHms(year, month, day, hour, min, sec);
-    const lunar = solar.getLunar();
-    
-    return {
-      fourPillars: {
-        year: { stem: lunar.getYearGanExact(), branch: lunar.getYearZhiExact() },
-        month: { stem: lunar.getMonthGanExact(), branch: lunar.getMonthZhiExact() },
-        day: { stem: lunar.getDayGanExact(), branch: lunar.getDayZhiExact() },
-        hour: { stem: lunar.getTimeGan(), branch: lunar.getTimeZhi() }
-      },
-      timeInfo: {
-        // 核心修正：使用 getPrevJieQi 确保精度到秒，彻底解决原库模糊问题
-        solarTerm: lunar.getPrevJieQi().getName() 
-      }
-    };
+    return ThreeMeta.QimenChart.fromSolar(year, month, day, hour, min, sec);
   },
 
-  // 补回拆补法引擎必须的节气查询接口，否则拆补法会崩溃
   getSolarTermInfo(year, month, day) {
-    const solar = OogoCalendar.Solar.fromYmdHms(year, month, day, 12, 0, 0);
-    return { name: solar.getLunar().getPrevJieQi().getName() };
+    const c = ThreeMeta.QimenChart.fromSolar(year, month, day, 12, 0, 0);
+    const st = c.timeInfo && c.timeInfo.solarTerm;
+    if (typeof st === "string") {
+      return { name: st, exactTime: null };
+    }
+    return {
+      name: st && st.name ? st.name : null,
+      exactTime: st && (st.exactTime || st.exactDate || st.time || null)
+    };
   }
 };
+
 // ============================================================
 // 四、符头系统与节气扫描器
 // ============================================================
@@ -524,15 +514,22 @@ const OogoZhiRun = {
     return targetDate; 
   },
 
-  calculate(year, month, day, hour, min, sec = 0) {
-    const fullChart = CalendarAdapter.getFullChart(year, month, day, hour, min, sec);
-    let targetDate = this.createDate(year, month, day);
-
-    // 【修复新增】：如果是晚子时 (23点及以后)，历法计算的基准日必须 +1 天
+   calculate(year, month, day, hour, min, sec = 0) {
+    let tYear = year, tMonth = month, tDay = day;
+    
+    // 【同步处理】：如果是晚子时，历法基准和四柱排盘全部跨日推后一天
     if (hour >= 23) {
-        targetDate = this.addDays(targetDate, 1);
+        let nextDay = new Date(year, month - 1, day);
+        nextDay.setDate(nextDay.getDate() + 1);
+        tYear = nextDay.getFullYear();
+        tMonth = nextDay.getMonth() + 1;
+        tDay = nextDay.getDate();
+        // 注意：这里是否需要把 hour 从 23 改成 0，取决于你的 CalendarAdapter 底层库是否能自动识别 23点为新一天的子时。
     }
 
+    // 这样拿到的 fullChart，它的四柱就已经是第二天（跨日后）的正确干支了
+    const fullChart = CalendarAdapter.getFullChart(tYear, tMonth, tDay, hour, min, sec);
+    let targetDate = this.createDate(tYear, tMonth, tDay);
 
     let SS_prev = this.getSolsticeDate(year - 1, false);
     let WS_prev = this.getSolsticeDate(year - 1, true);
@@ -1155,11 +1152,6 @@ const OogoFeiPan = {
       }
     }
 
-    // 👉【核心修复】：如果宫位数组不存在，先初始化 1 到 9 宫
-    if (!chart.palaces) {
-        chart.palaces = [1,2,3,4,5,6,7,8,9].map(pos => ({ position: pos }));
-    }
-
     chart.palaces.forEach(function (p) {
       const pos = p.position;
       const gate = flyGates[pos];
@@ -1208,20 +1200,11 @@ const OogoFeiPan = {
     if (!chart.zhiShi) chart.zhiShi = {};
     chart.zhiFu.position = zfTargetPalace;
     chart.zhiShi.position = zsTargetPalace;
-    
-    // 👉【核心修复】：给飞盘补充缺失的字段，确保 UI 取值时不报错
-    chart.xun = { name: xunName, stem: xunStem, branch: xunBranch };
-    
-    chart = OogoTagEnhancer.enhance(chart);
-    
-    if (!chart.timeInfo) chart.timeInfo = {};
-    chart.timeInfo.voidness = chart.kongWang ? chart.kongWang.branches : [];
-    chart.postHorse = chart.yiMa;
-    chart.uiTagFuYin = chart.uiTagFuYinFanYin ? chart.uiTagFuYinFanYin.text : '';
 
-    return chart;
+    return OogoTagEnhancer.enhance(chart);
   }
 };
+
 // ============================================================
 // 九、统一入口与导出
 // ============================================================
