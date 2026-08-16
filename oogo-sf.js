@@ -335,31 +335,49 @@ const QimenUtil = {
 };
 
 // ============================================================
-// 三、CalendarAdapter
+// 三、CalendarAdapter (适配 OogoCalendar 新历法核心)
 // ============================================================
 
 const CalendarAdapter = {
   getDayGanZhi(year, month, day) {
-    const c = ThreeMeta.QimenChart.fromSolar(year, month, day, 12, 0, 0);
-    return c.fourPillars.day;
+    const solar = OogoCalendar.Solar.fromYmdHms(year, month, day, 12, 0, 0);
+    const lunar = OogoCalendar.Lunar.fromSolar(solar);
+    return {
+      stem: lunar.getDayGanExact(),
+      branch: lunar.getDayZhiExact()
+    };
   },
 
   getFullChart(year, month, day, hour, min, sec = 0) {
-    return ThreeMeta.QimenChart.fromSolar(year, month, day, hour, min, sec);
+    const solar = OogoCalendar.Solar.fromYmdHms(year, month, day, hour, min, sec);
+    const lunar = OogoCalendar.Lunar.fromSolar(solar);
+    const prevJieQi = lunar.getPrevJieQi();
+    
+    return {
+      fourPillars: {
+        year: { stem: lunar.getYearGanExact(), branch: lunar.getYearZhiExact() },
+        month: { stem: lunar.getMonthGanExact(), branch: lunar.getMonthZhiExact() },
+        day: { stem: lunar.getDayGanExact(), branch: lunar.getDayZhiExact() },
+        hour: { stem: lunar.getTimeGan(), branch: lunar.getTimeZhi() }
+      },
+      timeInfo: {
+        solarTerm: prevJieQi.getName(),
+        solarTermTime: prevJieQi.getSolar().toYmdHms()
+      }
+    };
   },
 
   getSolarTermInfo(year, month, day) {
-    const c = ThreeMeta.QimenChart.fromSolar(year, month, day, 12, 0, 0);
-    const st = c.timeInfo && c.timeInfo.solarTerm;
-    if (typeof st === "string") {
-      return { name: st, exactTime: null };
-    }
-    return {
-      name: st && st.name ? st.name : null,
-      exactTime: st && (st.exactTime || st.exactDate || st.time || null)
+    const solar = OogoCalendar.Solar.fromYmdHms(year, month, day, 12, 0, 0);
+    const lunar = OogoCalendar.Lunar.fromSolar(solar);
+    const jq = lunar.getPrevJieQi();
+    return { 
+      name: jq.getName(), 
+      exactTime: jq.getSolar().toYmdHms() 
     };
   }
 };
+
 
 // ============================================================
 // 四、符头系统与节气扫描器
