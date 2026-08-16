@@ -696,7 +696,8 @@
     GAN: ['', '甲', '乙', '丙', '丁', '戊', '己', '庚', '辛', '壬', '癸'],
     ZHI: ['', '子', '丑', '寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥'],
     JIA_ZI: ["甲子","乙丑","丙寅","丁卯","戊辰","己巳","庚午","辛未","壬申","癸酉","甲戌","乙亥","丙子","丁丑","戊寅","己卯","庚辰","辛巳","壬午","癸未","甲申","乙酉","丙戌","丁亥","戊子","己丑","庚寅","辛卯","壬辰","癸巳","甲午","乙未","丙申","丁酉","戊戌","己亥","庚子","辛丑","壬寅","癸卯","甲辰","乙巳","丙午","丁未","戊申","己酉","庚戌","辛亥","壬子","癸丑","甲寅","乙卯","丙辰","丁巳","戊午","己未","庚申","辛酉","壬戌","癸亥"],
-    JIE_QI_IN_USE: ['大雪', '冬至', '小寒', '大寒', '立春', '雨水', '惊蛰', '春分', '清明', '谷雨', '立夏', '小满', '芒种', '夏至', '小暑', '大暑', '立秋', '处暑', '白露', '秋分', '寒露', '霜降', '立冬', '小雪', '大雪', 'DONG_ZHI', 'XIAO_HAN', 'DA_HAN', 'LI_CHUN', 'YU_SHUI', 'JING_ZHE'],
+    // ⚠️ 核心修复1：首位必须是 DA_XUE，防止对象键值覆盖导致月柱错乱
+    JIE_QI_IN_USE: ['DA_XUE', '冬至', '小寒', '大寒', '立春', '雨水', '惊蛰', '春分', '清明', '谷雨', '立夏', '小满', '芒种', '夏至', '小暑', '大暑', '立秋', '处暑', '白露', '秋分', '寒露', '霜降', '立冬', '小雪', '大雪', 'DONG_ZHI', 'XIAO_HAN', 'DA_HAN', 'LI_CHUN', 'YU_SHUI', 'JING_ZHE'],
     BASE_MONTH_ZHI_INDEX: 2,
     getTimeZhiIndex: function(hm){
       var hour = parseInt(hm.substring(0,2), 10);
@@ -822,9 +823,7 @@
       var gz = _compute(lunarYear, solar.getHour(), solar.getMinute(), solar.getSecond(), solar, ly);
       return {
         _p: gz,
-        // 添加获取节气表的方法，供拆补法/置闰法查询使用
         getJieQiTable: function() { return this._p.jieQi; },
-        
         getYearGanExact: function(){ return LunarUtil.GAN[this._p.yearGanIndexExact + 1]; },
         getYearZhiExact: function(){ return LunarUtil.ZHI[this._p.yearZhiIndexExact + 1]; },
         getMonthGanExact: function(){ return LunarUtil.GAN[this._p.monthGanIndexExact + 1]; },
@@ -854,10 +853,7 @@
           var near = null, name = null;
           var today = solar[wholeDay ? 'toYmd' : 'toYmdHms']();
           for(var key in this._p.jieQi){
-            // 过滤掉非节气词汇（排除中气）
-            if (LunarUtil.JIE_QI_IN_USE.indexOf(key) % 2 !== 0 && key !== 'DONG_ZHI' && key !== 'DA_HAN' && key !== 'XIAO_HAN' && key !== 'LI_CHUN' && key !== 'DA_XUE' && key !== 'YU_SHUI' && key !== 'JING_ZHE') {
-                continue; 
-            }
+            // ⚠️ 核心修复2：移除过滤中气的逻辑，奇门遁甲需要所有 24 个节+气
             var solarJq = this._p.jieQi[key];
             var day = solarJq[wholeDay ? 'toYmd' : 'toYmdHms']();
             if(day > today) continue;
@@ -879,7 +875,7 @@
     };
     return { fromSolar: function(solar){ return _fromSolar(solar); } };
   })();
-        
+
   // 暴露纯粹的核心 API
   return {
     Solar: Solar,
