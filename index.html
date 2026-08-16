@@ -464,7 +464,7 @@
       }
     }
 
-        // 监听引擎是否加载完毕 (更改为监听 OogoCalendar)
+            // 监听引擎是否加载完毕 
     let checkEngine = setInterval(function() {
       if (typeof OogoCalendar !== 'undefined' && typeof OogoQimen !== 'undefined') {
         clearInterval(checkEngine);
@@ -472,7 +472,7 @@
       }
     }, 200);
 
-    // 动态更新节气显示条 (改用 OogoCalendar 原生 API 获取节气)
+    // 动态更新节气显示条
     function updateDynamicInfo() {
       if (typeof OogoCalendar === 'undefined') return;
       try {
@@ -483,12 +483,10 @@
         );
         let lunar = OogoCalendar.Lunar.fromSolar(solar);
         
-        // 1. 获取当前节气与时间
         let currentJQInfo = lunar.getPrevJieQi();
         let currentJQName = currentJQInfo.getName();
         let startSolar = currentJQInfo.getSolar();
         
-        // 2. 推算下一个节气（直接加16天去找下个节气交节时间）
         let nextD = new Date(dDate.getTime() + 16 * 24 * 3600 * 1000);
         let nextSolarObj = OogoCalendar.Solar.fromYmdHms(
           nextD.getFullYear(), nextD.getMonth() + 1, nextD.getDate(),
@@ -497,7 +495,6 @@
         let nextLunar = OogoCalendar.Lunar.fromSolar(nextSolarObj);
         let nextJQInfo = nextLunar.getPrevJieQi();
 
-        // 格式化输出函数
         function formatS(s) { 
           return s.getYear() + '.' + pad(s.getMonth()) + '.' + pad(s.getDay()) + ' ' + pad(s.getHour()) + ':' + pad(s.getMinute()); 
         }
@@ -511,6 +508,7 @@
         console.error("更新节气栏出错: ", e); 
       }
     }
+
 
 
     const stems = ["甲","乙","丙","丁","戊","己","庚","辛","壬","癸"];
