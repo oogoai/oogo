@@ -1,11 +1,21 @@
 // ============================================================
 // OOGO 奇门遁甲核心引擎 (含完美置闰、拆补、传统转盘与原生飞盘)
+// 全量修正版 2026-08-15 - 补全转盘天/地盘干寄宫数组显示逻辑
 // ============================================================
 // 主体系：
 //   时家奇门
 //   传统转盘 / 原生飞盘
 //   置闰法 / 拆补法
-
+//
+// 辅助体系：
+//   空亡
+//   驿马
+//   六仪击刑
+//   门迫
+//   天盘干入墓
+//   伏吟 / 反吟
+//   地八神
+// ============================================================
 
 // ============================================================
 // 一、基础常量
@@ -354,13 +364,13 @@ const CalendarAdapter = {
       }
     };
   },
-// 补回拆补法引擎必须的节气查询接口，否则拆补法会崩溃
+
+  // 补回拆补法引擎必须的节气查询接口，否则拆补法会崩溃
   getSolarTermInfo(year, month, day) {
     const solar = OogoCalendar.Solar.fromYmdHms(year, month, day, 12, 0, 0);
     return { name: solar.getLunar().getPrevJieQi().getName() };
   }
 };
-
 // ============================================================
 // 四、符头系统与节气扫描器
 // ============================================================
@@ -516,7 +526,13 @@ const OogoZhiRun = {
 
   calculate(year, month, day, hour, min, sec = 0) {
     const fullChart = CalendarAdapter.getFullChart(year, month, day, hour, min, sec);
-    const targetDate = this.createDate(year, month, day);
+    let targetDate = this.createDate(year, month, day);
+
+    // 【修复新增】：如果是晚子时 (23点及以后)，历法计算的基准日必须 +1 天
+    if (hour >= 23) {
+        targetDate = this.addDays(targetDate, 1);
+    }
+
 
     let SS_prev = this.getSolsticeDate(year - 1, false);
     let WS_prev = this.getSolsticeDate(year - 1, true);
@@ -706,10 +722,15 @@ const OogoFuFan = {
     let starFu = true, gateFu = true, starFan = true, gateFan = true;
     for (const p of palaces) {
       if (p.position === 5) continue;
-      const star = Array.isArray(p.star) ? p.star[0] : p.star;
-      const gate = p.gate || "";
+      let star = Array.isArray(p.star) ? p.star[0] : p.star;
+// 兼容处理：将 "天芮/天禽" 统一截断或替换为 "天芮" 参与比对
+if (star === "天芮/天禽") {
+  star = "天芮";
+}
+const gate = p.gate || "";
 
-      if (star !== this.starBase[p.position]) starFu = false;
+if (star !== this.starBase[p.position]) starFu = false;
+
       if (gate && gate !== this.gateBase[p.position]) gateFu = false;
 
       const opposite = this.opposite[p.position];
