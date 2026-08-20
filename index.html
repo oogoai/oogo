@@ -179,6 +179,17 @@
     .stem-h { color: var(--c-stem-h); font-size: 17px; } 
     .stem-e { color: var(--c-stem-e); font-size: 14px; } 
 
+    /* 用神高亮红框样式 */
+    .highlight-ys {
+      outline: 2px solid #dc2626 !important;
+      outline-offset: 2px;
+      border-radius: 3px;
+      background-color: rgba(220, 38, 38, 0.15) !important;
+      display: inline-block;
+      z-index: 99;
+      transition: all 0.2s;
+    }
+
     @media (min-width: 600px) {
       body { max-width: 520px; padding: 16px; }
       .cell { height: 145px; }
@@ -295,6 +306,47 @@
 
     let isChartGenerated = false;
     let showGeJu = false; // ★ 修改点 2：增加全局变量记录是否开启格局显示
+    let currentYsVal = ''; // 记录当前选择的用神类别
+
+    // 切换用神选项触发
+    function changeYS(val) {
+      currentYsVal = val;
+      applyYongShenHighlight();
+    }
+
+    // 执行用神高亮的核心逻辑
+    function applyYongShenHighlight() {
+      // 1. 先清除盘面上所有已有的红框
+      document.querySelectorAll('.highlight-ys').forEach(el => {
+        el.classList.remove('highlight-ys');
+      });
+
+      // 如果选的是空白（无），直接结束
+      if (!currentYsVal) return;
+
+      // 2. 根据选项定义对应的用神关键字
+      let targets = [];
+      switch (currentYsVal) {
+        case '1': targets = ['戊', '生']; break;          // 求财
+        case '2': targets = ['戊', '生', '死', '符', '地', '辛']; break;          // 风水
+        case '3': targets = ['开', '符']; break;                // 事业
+        case '4': targets = ['丁', '辅', '景', '符']; break;          // 学业
+        case '5': targets = ['乙', '庚', '六', '丙', '丁']; break;    // 婚姻
+        case '6': targets = ['乙', '芮', '心']; break;          // 身体
+      }
+
+      // 3. 遍历所有的宫格，寻找匹配的字并高亮
+      const cells = document.querySelectorAll('.cell');
+      cells.forEach(cell => {
+        // 只检查星、门、神、天干、地支的元素
+        const elements = cell.querySelectorAll('.gate-text, .star-text, .deity-text, .stem-h, .stem-e');
+        elements.forEach(el => {
+          if (targets.some(t => el.innerText.includes(t))) {
+            el.classList.add('highlight-ys');
+          }
+        });
+      });
+    }
 
     function pad(n) { return n < 10 ? '0' + n : n; }
 
@@ -549,7 +601,20 @@
             '<div class="bazi-box"><div class="bazi-title">时柱</div><div class="bazi-value">' + formatPillar(bH) + '</div></div>' +
           '</div>' +
           '<div class="info-row"><span style="display:flex; align-items:center;">' + jqName + superShenTip + runTag + ' &nbsp;' + yuanStr + ' &nbsp;' + dunStr + '</span><span>符头: ' + fuTou + '</span></div>' +
-          '<div class="info-row zhifu-row"><span class="pill-green">值符: ' + displayZfName + '(' + zfPalace + '宫)</span><div class="circle-logo" onclick="exportImage()">历</div><span class="pill-green">值使: ' + zsName + '(' + zsPalace + '宫)</span></div>' +
+          '<div class="info-row zhifu-row"><span class="pill-green">值符: ' + displayZfName + '(' + zfPalace + '宫)</span><div class="circle-logo" onclick="exportImage()">历</div>' +
+          '<div style="position: relative; display: inline-block;">' +
+            '<span class="pill-green">值使: ' + zsName + '(' + zsPalace + '宫)</span>' +
+            '<select id="ysSelect" onchange="changeYS(this.value)" style="position:absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:pointer; -webkit-appearance:none;">' +
+              '<option value="">(点击选择求测事项)</option>' +
+              '<option value="1" ' + (currentYsVal==='1'?'selected':'') + '>1. 求财（财运、投资、生意）</option>' +
+              '<option value="2" ' + (currentYsVal==='2'?'selected':'') + '>2. 风水（环境、阳宅、阴宅）</option>' +
+              '<option value="3" ' + (currentYsVal==='3'?'selected':'') + '>3. 事业（工作、升职、求职）</option>' +
+              '<option value="4" ' + (currentYsVal==='4'?'selected':'') + '>4. 学业（考试、考研、成绩）</option>' +
+              '<option value="5" ' + (currentYsVal==='5'?'selected':'') + '>5. 婚姻（恋爱、相亲、感情）</option>' +
+              '<option value="6" ' + (currentYsVal==='6'?'selected':'') + '>6. 身体（健康、疾病、看病）</option>' +
+            '</select>' +
+          '</div>' +
+          '</div>' +
           '<div class="info-row"><span style="display:flex; align-items:center;">旬首: ' + xunName + '遁' + xunDun + fyText + '</span><span>马星: ' + maXing + ' &nbsp;空亡: ' + kong1 + ',' + kong2 + '</span></div>';
         
         document.getElementById('infoBoard').innerHTML = boardHtml;
@@ -600,7 +665,6 @@
           
           let innerHtml = '<div class="row"><div class="left-item deity deity-text">' + tDeity + '</div><div class="' + hClass + '">' + showHStem + '</div></div><div class="row"><div class="left-item star star-text">' + starName + '</div><div class="' + eClass + '">' + showEStem + '</div></div><div class="row"><div class="left-item ' + gateClass + ' gate-text">' + gateName + '</div><div class="right-item edeity-text">' + eDeity + '</div></div>';
 
-          // ★ 修改点 4：当开启吉凶格局展示，并且不是中五宫时，覆盖原本的文字
           if (showGeJu && pos !== 5) {
             if (p.patterns && p.patterns.length > 0) {
                 let patHtml = p.patterns.map(pat => {
@@ -644,7 +708,9 @@ let bg = isJi ? 'rgba(34, 197, 94, 0.15)' : (isXiong ? 'rgba(220, 38, 38, 0.15)'
         
         document.getElementById('chartGrid').innerHTML = gridHtml;
 
-        // ★ 修改点 5：如果有五不遇时这种全局大凶格局，弹窗提示
+        // 每次重新起局或切换参数后，重新渲染当前的用神高亮状态
+        applyYongShenHighlight();
+
         if (showGeJu && chart.globalPatterns && chart.globalPatterns.length > 0) {
             setTimeout(() => {
                 showToast('⚠️ 警报：' + chart.globalPatterns[0].name + '（' + chart.globalPatterns[0].desc + '）');
