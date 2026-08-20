@@ -184,7 +184,7 @@
       outline: 2px solid #dc2626 !important;
       outline-offset: 2px;
       border-radius: 3px;
-      background-color: rgba(220, 38, 38, 0.15) !important;
+     /* background-color: rgba(220, 38, 38, 0.15) !important; /* <--- 就是这行红底背景 */
       display: inline-block;
       z-index: 99;
       transition: all 0.2s;
@@ -542,8 +542,10 @@
         
         let dDate = getEffectiveDate();
         const y = dDate.getFullYear(), m = dDate.getMonth() + 1, d = dDate.getDate(), h = dDate.getHours(), min = dDate.getMinutes();
-        let method = document.getElementById('methodSelect').value, panType = document.getElementById('panSelect').value, jigong = document.getElementById('jigongSelect').value;        
-        let chart, isRun = false, superShenDays = 0, juInfo;       
+        let method = document.getElementById('methodSelect').value, panType = document.getElementById('panSelect').value, jigong = document.getElementById('jigongSelect').value;
+        
+        let chart, isRun = false, superShenDays = 0, juInfo;
+        
         if (method === 'zhirun') { juInfo = OogoZhiRun.calculate(y, m, d, h, min, 0); isRun = juInfo.isTrueRun; superShenDays = juInfo.superShenDays || 0; }
         else if (method === 'maoshan') { juInfo = OogoMaoShan.calculate(y, m, d, h, min, 0); }
         else { juInfo = OogoChaiBu.calculate(y, m, d, h, min, 0); }
@@ -567,23 +569,30 @@
 
         let bY = chart.fourPillars.year.stem + chart.fourPillars.year.branch, bM = chart.fourPillars.month.stem + chart.fourPillars.month.branch;
         let bD = chart.fourPillars.day.stem + chart.fourPillars.day.branch, bH = chart.fourPillars.hour.stem + chart.fourPillars.hour.branch;
+
         let dSIdx = stems.indexOf(chart.fourPillars.day.stem), dBIdx = branches.indexOf(chart.fourPillars.day.branch);
         let fuOffset = dSIdx >= 0 ? dSIdx % 5 : 0;
         let fuTou = stems[dSIdx - fuOffset] + branches[(dBIdx - fuOffset + 12) % 12];
         let yuanDay = fuOffset + 1; 
+
         let maXing = chart.postHorse ? chart.postHorse.branch : '', voidnessArr = (chart.timeInfo && chart.timeInfo.voidness) ? chart.timeInfo.voidness : [];
         let kong1 = voidnessArr[0] || '', kong2 = voidnessArr[1] || '';
+
         let zfPalace = chart.zhiFu.position, zsPalace = chart.zhiShi.position;
         let zfPalaceObj = chart.palaces.find(p => p.position === zfPalace) || {}, zsPalaceObj = chart.palaces.find(p => p.position === zsPalace) || {};
         let displayZfName = (Array.isArray(zfPalaceObj.star) ? zfPalaceObj.star[0] : (zfPalaceObj.star || '')).replace(/天|星/g, '');
         let zsName = (zsPalaceObj.gate || '').replace('门', '');
+
         let jqName = chart.solarTerm || (chart.timeInfo && chart.timeInfo.solarTerm) || "未知";
         let runTag = isRun ? '<span style="color:var(--c-gate-r); font-weight:bold; margin-left:2px;">(闰)</span>' : '';
-        let superShenTip = (method === 'zhirun' && superShenDays > 0) ? `<span style="color:var(--text-gold); font-weight:bold; margin-left:2px;">(超神${superShenDays}天)</span>` : '';     
+        let superShenTip = (method === 'zhirun' && superShenDays > 0) ? `<span style="color:var(--text-gold); font-weight:bold; margin-left:2px;">(超神${superShenDays}天)</span>` : '';
+        
         let yuanStr = (chart.yuan || '中元') + '第' + yuanDay + '天', dunStr = (chart.ju.type || '') + (chart.ju.number || '') + '局';
         let xunName = chart.xun ? chart.xun.name : "", xunDun = chart.xun ? chart.xun.stem : "";
+
         let fyText = chart.uiTagFuYin || '';
         if (fyText) fyText = '<span style="color:#d34e55; font-weight:bold; margin-left:8px; border:1px solid #d34e55; padding:1px 4px; border-radius:4px; font-size:13px;">' + fyText + '</span>';
+
         let boardHtml =
           '<div class="bazi-row">' +
             '<div class="bazi-box"><div class="bazi-title">年柱</div><div class="bazi-value">' + formatPillar(bY) + '</div></div>' +
@@ -616,36 +625,46 @@
         let gridHtml = '';
 
         const guaMap = { 1:'坎', 2:'坤', 3:'震', 4:'巽', 5:'中', 6:'乾', 7:'兑', 8:'艮', 9:'离' };
+
         const displayOrder = [4, 9, 2, 3, 5, 7, 8, 1, 6];
         displayOrder.forEach(function(pos) {
           const p = chart.palaces.find(x => x.position === pos) || {};
           let tDeity = simplifyDeity(Array.isArray(p.deity) ? p.deity[0] : (p.deity || ''));
           let eDeity = (panType === 'zhuan') ? simplifyDeity(p.earthDeity || '') : ''; 
-          let starName = (Array.isArray(p.star) ? p.star.join('/') : (p.star || '')).replace(/天/g, '').replace(/星/g, '');          
+          let starName = (Array.isArray(p.star) ? p.star.join('/') : (p.star || '')).replace(/天/g, '').replace(/星/g, '');
+          
           let hiddenStem = "";
           if (panType === 'fei') hiddenStem = p.hiddenStem || "";
           else if (chart.hiddenStems && typeof chart.hiddenStems.get === 'function') hiddenStem = chart.hiddenStems.get(pos) || "";
           else if (chart.hiddenStems) hiddenStem = chart.hiddenStems[pos] || "";
+          
           let hStem = Array.isArray(p.heavenlyStem) ? p.heavenlyStem.join('/') : (p.heavenlyStem || '');
           let eStem = Array.isArray(p.earthlyStem) ? p.earthlyStem.join('/') : (p.earthlyStem || '');
+          
           let dayStem = chart.fourPillars.day.stem; let dColor = getWuxingColor(dayStem);
           let showHStem = hStem.replace(new RegExp(dayStem, 'g'), `<span style="color:${dColor};">${dayStem}</span>`);
           let showEStem = eStem; 
+
           let origGate = p.gate || ''; let gateName = origGate.replace('门', '');
           let gateClass = (origGate === '生门' || origGate === '休门' || origGate === '开门') ? 'gate-g' : ((origGate === '杜门' || origGate === '景门') ? 'gate-n' : 'gate-r');
           if (origGate === '中门') gateClass = 'gate-g';
+
           let tagsArr = [];
           if (p.uiTagJx) tagsArr.push('<span class="tag-jx">刑</span>');
           if (p.uiTagPo) tagsArr.push('<span class="tag-po">迫</span>');
           if (p.uiTagMu) tagsArr.push('<span class="tag-mu">墓</span>');
           if (p.uiTagMa) tagsArr.push('<span class="tag-ma">马</span>');
           if (p.uiTagKong) tagsArr.push('<span class="tag-kong">空</span>');
+
           let isCrowded = tagsArr.length >= 3; 
           let tagsHtml = '';
           if (tagsArr.length > 0) tagsHtml = `<div style="position:absolute; top:1px; right:1px; display:flex; gap:3px; flex-direction:row-reverse; z-index:10;">${tagsArr.join('')}</div>`;
+
           let hClass = hStem.indexOf('/') !== -1 ? 'right-item stem-h small-stem-h' : 'right-item stem-h';
-          let eClass = eStem.indexOf('/') !== -1 ? 'right-item stem-e small-stem-e' : 'right-item stem-e';          
+          let eClass = eStem.indexOf('/') !== -1 ? 'right-item stem-e small-stem-e' : 'right-item stem-e';
+          
           let innerHtml = '<div class="row"><div class="left-item deity deity-text">' + tDeity + '</div><div class="' + hClass + '">' + showHStem + '</div></div><div class="row"><div class="left-item star star-text">' + starName + '</div><div class="' + eClass + '">' + showEStem + '</div></div><div class="row"><div class="left-item ' + gateClass + ' gate-text">' + gateName + '</div><div class="right-item edeity-text">' + eDeity + '</div></div>';
+
           if (showGeJu && pos !== 5) {
             if (p.patterns && p.patterns.length > 0) {
                 let patHtml = p.patterns.map(pat => {
@@ -664,6 +683,7 @@ let bg = isJi ? 'rgba(34, 197, 94, 0.15)' : (isXiong ? 'rgba(220, 38, 38, 0.15)'
 
           let tC = 'dz-top', bC = 'dz-bottom', lC = 'dz-left', rC = 'dz-right';
           if (isCrowded && (pos === 4 || pos === 9 || pos === 2)) tC = 'dz-top dz-out-top';
+
           let dzHtml = '';
           if (pos === 1) dzHtml = `<div class="${bC}">子</div>`;
           else if (pos === 2) dzHtml = `<div class="${tC}">未</div><div class="${rC}">申</div>`; 
@@ -673,6 +693,7 @@ let bg = isJi ? 'rgba(34, 197, 94, 0.15)' : (isXiong ? 'rgba(220, 38, 38, 0.15)'
           else if (pos === 7) dzHtml = `<div class="${rC}">酉</div>`;
           else if (pos === 8) dzHtml = `<div class="${bC}">丑</div><div class="${lC}">寅</div>`;
           else if (pos === 9) dzHtml = `<div class="${tC}">午</div>`;
+
           if (pos === 5) {
             if (panType === 'fei') { 
               gridHtml += '<div class="cell"><svg class="taichi-svg" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);opacity:0.06;z-index:0;" viewBox="0 0 100 100"><circle cx="50" cy="50" r="48" fill="#fff" stroke="var(--border-color)" stroke-width="1"/><path d="M 50 2 A 48 48 0 0 1 50 98 C 18 98, 18 50, 50 50 C 82 50, 82 2, 50 2 Z" fill="#000"/></svg>' + tagsHtml + dzHtml + '<div class="inner-content" style="z-index:1;">' + innerHtml + '</div><div class="palace-row" style="z-index:1;"><span>中5宫</span><span class="hidden-stem-text">' + hiddenStem + '</span></div></div>';
