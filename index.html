@@ -311,23 +311,17 @@
     let showChangSheng = false; // ★ 记录十二长生开关状态
 
 // ★ 十二长生切换控制函数
-function toggleChangSheng() {
+  function toggleChangSheng() {
   showChangSheng = !showChangSheng;
-  const nongBadge = document.querySelector('.badge-nong');
-  if (showChangSheng) {
-    nongBadge.style.background = 'var(--text-gold)';
-    nongBadge.style.color = '#000';
-  } else {
-    nongBadge.style.background = 'rgba(91, 146, 214, 0.15)';
-    nongBadge.style.color = 'var(--text-blue)';
-  }
   
   if (isChartGenerated) {
     generateChart(); 
   } else {
+    // 依然保留底部的弹窗提示，让你自己知道开关状态
     showToast(showChangSheng ? '🌱 十二长生：已开启' : '🌱 十二长生：已关闭');
   }
 }
+  
     // 切换用神选项触发
     function changeYS(val) {
       currentYsVal = val;
