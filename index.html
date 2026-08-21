@@ -221,7 +221,8 @@
     </div>
 
     <div class="ctrl-row">
-      <div class="badge badge-nong">节</div>
+  <!-- 替换下面这一行 -->
+  <div class="badge badge-nong" onclick="toggleChangSheng()" style="cursor:pointer; transition:all 0.3s;" title="点击切换十二长生">节</div>
       <div style="flex: 1; background: var(--bg-main); border: 1px solid var(--border-color); height: 26px; border-radius: 4px; display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 0 2px; box-sizing: border-box;">
         <div id="jieqiRange" style="white-space: nowrap; font-size: min(11.5px, 2.9vw); font-weight: bold; color: var(--text-main); letter-spacing: -0.2px;">
           加载节气中...
@@ -307,7 +308,26 @@
     let isChartGenerated = false;
     let showGeJu = false; // ★ 修改点 2：增加全局变量记录是否开启格局显示
     let currentYsVal = ''; // 记录当前选择的用神类别
+    let showChangSheng = false; // ★ 记录十二长生开关状态
 
+// ★ 十二长生切换控制函数
+function toggleChangSheng() {
+  showChangSheng = !showChangSheng;
+  const nongBadge = document.querySelector('.badge-nong');
+  if (showChangSheng) {
+    nongBadge.style.background = 'var(--text-gold)';
+    nongBadge.style.color = '#000';
+  } else {
+    nongBadge.style.background = 'rgba(91, 146, 214, 0.15)';
+    nongBadge.style.color = 'var(--text-blue)';
+  }
+  
+  if (isChartGenerated) {
+    generateChart(); 
+  } else {
+    showToast(showChangSheng ? '🌱 十二长生：已开启' : '🌱 十二长生：已关闭');
+  }
+}
     // 切换用神选项触发
     function changeYS(val) {
       currentYsVal = val;
@@ -644,6 +664,22 @@
           let dayStem = chart.fourPillars.day.stem; let dColor = getWuxingColor(dayStem);
           let showHStem = hStem.replace(new RegExp(dayStem, 'g'), `<span style="color:${dColor};">${dayStem}</span>`);
           let showEStem = eStem; 
+// ====== ★ 新增：十二长生 UI 渲染注入点 ======
+if (showChangSheng && pos !== 5) {
+  // 直接从后端 OogoTagEnhancer 传过来的数据对象(p)里取值
+  let csH = p.heavenlyChangsheng; 
+  let csE = p.earthlyChangsheng;  
+  
+  if (csH) {
+    showHStem = `<span style="position:relative; display:inline-block;">${showHStem}<span style="position:absolute; bottom:-12px; right:0; font-size:10px; color:var(--text-gray); font-weight:normal; letter-spacing:-0.5px; transform:scale(0.85); transform-origin:right; white-space:nowrap; z-index:5;">${csH}</span></span>`;
+  }
+  if (csE) {
+    showEStem = `<span style="position:relative; display:inline-block;">${showEStem}<span style="position:absolute; bottom:-12px; right:0; font-size:10px; color:var(--text-gray); font-weight:normal; letter-spacing:-0.5px; transform:scale(0.85); transform-origin:right; white-space:nowrap; z-index:5;">${csE}</span></span>`;
+  }
+}
+// ============================================
+
+let origGate = p.gate || ''; let gateName = origGate.replace('门', '');
 
           let origGate = p.gate || ''; let gateName = origGate.replace('门', '');
           let gateClass = (origGate === '生门' || origGate === '休门' || origGate === '开门') ? 'gate-g' : ((origGate === '杜门' || origGate === '景门') ? 'gate-n' : 'gate-r');
