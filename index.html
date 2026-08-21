@@ -313,7 +313,8 @@
 // ★ 十二长生切换控制函数
   function toggleChangSheng() {
   showChangSheng = !showChangSheng;
-  
+  // ★ 新增：将当前开关状态存入本地存储 (转成字符串 'true' 或 'false')
+  localStorage.setItem('oogo_show_changsheng', showChangSheng);
   if (isChartGenerated) {
     generateChart(); 
   } else {
@@ -511,6 +512,18 @@
     }
     
     initSettings();
+    // 初始化时读取本地存储的十二长生状态
+function initChangShengSetting() {
+  const savedState = localStorage.getItem('oogo_show_changsheng');
+  if (savedState !== null) {
+    // 字符串转成布尔值
+    showChangSheng = (savedState === 'true');
+  }
+}
+
+// 页面加载时执行它
+initChangShengSetting();
+
 
     function toggleTheme() { 
       document.body.classList.toggle('light-theme');
