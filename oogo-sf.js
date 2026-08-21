@@ -1,817 +1,1102 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>OOGO 奇门遁甲</title>
-  
-  <link rel="apple-touch-icon" href="./apple-touch-icon.png?v=9">
-  <link rel="icon" type="image/png" href="./apple-touch-icon.png?v=9">
-  <link rel="manifest" href="./manifest.json">
-  
-  <style>
-    /* ========================================================= */
-    /* 1. 颜色与主题变量配置区 */
-    /* ========================================================= */
-    :root {
-      --bg-main: #131520;      
-      --panel-bg: #161824;     
-      --border-color: #2e3048; 
-      --gold-line: #c59b47;    
-      --cell-bg: #10111a;      
-      
-      --text-main: #ffffff;    
-      --text-gray: #b0b7c3;    
-      --text-blue: #60a5fa;    
-      --text-gold: #fbbf24;    
-      
-      --c-deity: #f97316;      
-      --c-star: #60a5fa;       
-      --c-gate-g: #22c55e;     
-      --c-gate-r: #dc2626;     
-      --c-gate-n: #b45309;     
-      --c-stem-h: #f472b6;     
-      --c-stem-e: #ffffff;     
-      
-      --tag-ma-bg: #d34e55;
-      --tag-kong-bg: #7a7a90;
-      
-      --palace-text: #7a7a90;      
-      --edeity-text: #c4b5a2;      
-      --dark-stem-color: #ba4a00;  
-      --dark-stem-bg: rgba(129, 140, 248, 0.1);
-      
-      --wx-wood: #4ade80;   
-      --wx-fire: #dc2626;   
-      --wx-earth: #b45309;  
-      --wx-metal: #fde047;  
-      --wx-water: #60a5fa;  
+// ============================================================
+// OOGO 奇门遁甲核心引擎 (含完美置闰、拆补、茅山、传统转盘与原生飞盘) 
+// ============================================================
+
+// ============================================================
+// 一、基础常量
+// ============================================================
+
+const QimenConst = {
+  STEMS: [
+    "甲","乙","丙","丁","戊",
+    "己","庚","辛","壬","癸"
+  ],
+
+  BRANCHES: [
+    "子","丑","寅","卯","辰","巳",
+    "午","未","申","酉","戌","亥"
+  ],
+
+  QIMEN_STEMS: [
+    "戊","己","庚","辛","壬",
+    "癸","丁","丙","乙"
+  ],
+
+  PALACES: [1,2,3,4,5,6,7,8,9],
+
+  BAGUA_RING: [1,8,3,4,9,2,7,6],
+
+  STARS: {
+    1: "天蓬", 2: "天芮", 3: "天冲", 4: "天辅", 5: "天禽",
+    6: "天心", 7: "天柱", 8: "天任", 9: "天英"
+  },
+
+  GATES: {
+    1: "休门", 2: "死门", 3: "伤门", 4: "杜门",
+    6: "开门", 7: "惊门", 8: "生门", 9: "景门"
+  },
+
+  GATE_ORDER: [
+    "休门", "生门", "伤门", "杜门", "景门", "死门", "惊门", "开门"
+  ],
+
+  DEITY_ORDER_YIN: ["符", "螣", "阴", "六", "白", "玄", "地", "天"],
+  DEITY_ORDER_YANG: ["符", "螣", "阴", "六", "白", "玄", "地", "天"],
+
+  PALACE_ELEMENT: {
+    1: "水", 2: "土", 3: "木", 4: "木", 5: "土", 6: "金", 7: "金", 8: "土", 9: "火"
+  },
+
+  STEM_ELEMENT: {
+    "甲": "木", "乙": "木", "丙": "火", "丁": "火", "戊": "土",
+    "己": "土", "庚": "金", "辛": "金", "壬": "水", "癸": "水"
+  },
+
+  GATE_ELEMENT: {
+    "休门": "水", "生门": "土", "伤门": "木", "杜门": "木",
+    "景门": "火", "死门": "土", "惊门": "金", "开门": "金"
+  },
+
+  YANG_JU: {
+    "冬至": [1,7,4], "小寒": [2,8,5], "大寒": [3,9,6], "立春": [8,5,2],
+    "雨水": [9,6,3], "惊蛰": [1,7,4], "春分": [3,9,6], "清明": [4,1,7],
+    "谷雨": [5,2,8], "立夏": [4,1,7], "小满": [5,2,8], "芒种": [6,3,9]
+  },
+
+  YIN_JU: {
+    "夏至": [9,3,6], "小暑": [8,2,5], "大暑": [7,1,4], "立秋": [2,5,8],
+    "处暑": [1,4,7], "白露": [9,3,6], "秋分": [7,1,4], "寒露": [6,9,3],
+    "霜降": [5,8,2], "立冬": [6,9,3], "小雪": [5,8,2], "大雪": [4,7,1]
+  },
+
+  SOLAR_TERMS: [
+    "小寒","大寒","立春","雨水","惊蛰","春分",
+    "清明","谷雨","立夏","小满","芒种","夏至",
+    "小暑","大暑","立秋","处暑","白露","秋分",
+    "寒露","霜降","立冬","小雪","大雪","冬至"
+  ],
+
+  YANG_TERMS: [
+    "冬至","小寒","大寒","立春","雨水","惊蛰",
+    "春分","清明","谷雨","立夏","小满","芒种"
+  ],
+
+  YIN_TERMS: [
+    "夏至","小暑","大暑","立秋","处暑","白露",
+    "秋分","寒露","霜降","立冬","小雪","大雪"
+  ]
+};
+
+// ============================================================
+// 二、工具函数
+// ============================================================
+const QimenUtil = {
+  mod(value, length) { return ((value % length) + length) % length; },
+  palaceExists(palace) { return QimenConst.PALACES.includes(palace); },
+  isOuterPalace(palace) { return palace !== 5; },
+  resolveJiGong(palace) { return palace === 5 ? 2 : palace; },
+  nextDate(date, days) { const d = new Date(date.getTime()); d.setDate(d.getDate() + days); return d; },
+  dateOnly(y, m, d) { return new Date(y, m - 1, d, 12, 0, 0, 0); },
+  stemIndex(stem) { return QimenConst.STEMS.indexOf(stem); },
+  branchIndex(branch) { return QimenConst.BRANCHES.indexOf(branch); },
+  findStemBranchIndex(stem, branch) {
+    for (let i = 0; i < 60; i++) {
+      if (QimenConst.STEMS[i % 10] === stem && QimenConst.BRANCHES[i % 12] === branch) return i;
     }
+    return -1;
+  },
+  getXunInfo(stem, branch) {
+    const index = this.findStemBranchIndex(stem, branch);
+    if (index < 0) throw new Error(`无法确定旬：${stem}${branch}`);
+    const xunIndex = index - (index % 10);
+    const xunNames = ["甲子", "甲戌", "甲申", "甲午", "甲辰", "甲寅"];
+    const xunName = xunNames[xunIndex / 10];
+    const xunStemMap = { "甲子": "戊", "甲戌": "己", "甲申": "庚", "甲午": "辛", "甲辰": "壬", "甲寅": "癸" };
+    const xunBranch = { "甲子": "子", "甲戌": "戌", "甲申": "申", "甲午": "午", "甲辰": "辰", "甲寅": "寅" }[xunName];
+    return { name: xunName, stem: xunStemMap[xunName], branch: xunBranch, index: index };
+  },
+  ringIndex(palace) { return QimenConst.BAGUA_RING.indexOf(palace); },
+  ringMove(palace, steps, direction = 1) {
+    const ring = QimenConst.BAGUA_RING;
+    const index = ring.indexOf(palace);
+    if (index < 0) return palace;
+    return ring[this.mod(index + steps * direction, ring.length)];
+  },
+  numberMove(palace, steps, direction = 1) {
+    return this.mod((palace - 1) + steps * direction, 9) + 1;
+  },
+  isJiXing(stem, palace) {
+    return (
+      (stem === "戊" && palace === 3) || (stem === "己" && palace === 2) ||
+      (stem === "庚" && palace === 8) || (stem === "辛" && palace === 9) ||
+      (stem === "壬" && palace === 4) || (stem === "癸" && palace === 4)
+    );
+  },
+  isTianGanMu(stem, palace) {
+    if (palace === 6 && ["乙", "丙", "戊"].includes(stem)) return true;
+    if (palace === 8 && ["丁", "己", "庚"].includes(stem)) return true;
+    if (palace === 4 && ["辛", "壬"].includes(stem)) return true;
+    if (palace === 2 && stem === "癸") return true;
+    return false;
+  },
+  isMenPo(gate, palace) {
+    if (!gate) return false;
+    const gateElement = QimenConst.GATE_ELEMENT[gate];
+    const palaceElement = QimenConst.PALACE_ELEMENT[palace];
+    if (!gateElement || !palaceElement) return false;
+    return (
+      (gateElement === "水" && palaceElement === "火") || (gateElement === "火" && palaceElement === "金") ||
+      (gateElement === "金" && palaceElement === "木") || (gateElement === "木" && palaceElement === "土") ||
+      (gateElement === "土" && palaceElement === "水")
+    );
+  }, 
+  // ==========================================
+  // ★ 新增：十天干十二长生法理推算算法
+  // ==========================================
+  getChangSheng(stem, palace) {
+    if (!stem || palace === 5) return ""; // 中5宫或无天干时不计算
+    
+    // 提取可能的数组或字符串的第一个字 (如遇到寄宫情况 "丙/戊"，只取 "丙")
+    const mainStem = Array.isArray(stem) ? stem[0] : (typeof stem === 'string' ? stem.split('/')[0] : stem);
+    
+    const states = ["生", "沐", "冠", "临", "旺", "衰", "病", "死", "墓", "绝", "胎", "养"];
+    // 九宫对应的地支索引 (子=0, 丑=1... 亥=11)
+    const branchesMap = { 1:[0], 8:[1,2], 3:[3], 4:[4,5], 9:[6], 2:[7,8], 7:[9], 6:[10,11] };
+    // 十天干长生起点地支索引 (阳顺阴逆)
+    const startMap = { '甲':11, '乙':6, '丙':2, '丁':9, '戊':2, '己':9, '庚':5, '辛':0, '壬':8, '癸':3 };
+    const isYin = ['乙', '丁', '己', '辛', '癸'].includes(mainStem);
 
-    body.light-theme {
-      --bg-main: #f0f2f5;
-      --panel-bg: #ffffff;
-      --border-color: #d1d5db;
-      --gold-line: #b8975c;
-      --cell-bg: #ffffff;
-      --text-main: #111827;
-      --text-gray: #6b7280;
-      --text-blue: #2563eb;
-      --text-gold: #d97706;
-      --c-deity: #d97706;
-      --c-star: #2563eb;
-      --c-gate-g: #16a34a;
-      --c-gate-r: #dc2626;
-      --c-gate-n: #632914;
-      --c-stem-h: #f472b6;
-      --c-stem-e: #111827;
-      --palace-text: #9ca3af;
-      --edeity-text: #8b5cf6;
-      --dark-stem-color: #ba4a00;
-      --dark-stem-bg: rgba(79, 70, 229, 0.08);
+    if (!startMap.hasOwnProperty(mainStem)) return "";
+    const startIdx = startMap[mainStem];
+    const palaceBranches = branchesMap[palace];
 
-      --wx-wood: #16a34a;   
-      --wx-fire: #dc2626;   
-      --wx-earth: #b45309;  
-      --wx-metal: #eab308;  
-      --wx-water: #2563eb;  
+    let res = [];
+    // 遍历宫内包含的地支，四正宫1个，四维宫2个
+    for (let i = 0; i < palaceBranches.length; i++) {
+      let b = palaceBranches[i];
+      // 阳干顺行，阴干逆行计算偏移量
+      let offset = isYin ? (startIdx - b + 12) % 12 : (b - startIdx + 12) % 12;
+      res.push(states[offset]);
     }
-    
-    body:not(.light-theme) .deity-text,
-    body:not(.light-theme) .star-text,
-    body:not(.light-theme) .gate-text,
-    body:not(.light-theme) .stem-h,
-    body:not(.light-theme) .stem-e {
-      text-shadow: 0 0 8px rgba(255, 255, 255, 0.15);
-    }
-    
-    /* ========================================================= */
-    /* 2. 全局样式与顶部控制台样式 */
-    /* ========================================================= */
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; padding: 3px; background: var(--bg-main); color: var(--text-main); margin: 0 auto; max-width: 100%; transition: background 0.3s, color 0.3s; box-sizing: border-box; }
-    
-    .top-ctrl { background: var(--panel-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; margin-bottom: 12px; transition: all 0.3s; }
-    .ctrl-row { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; width: 100%; box-sizing: border-box; }
-    
-    .badge { width: 24px; height: 24px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: bold; flex-shrink: 0; transition: all 0.3s;}
-    .badge-gong, .badge-nong, .badge-zhen { background: rgba(91, 146, 214, 0.15); color: var(--text-blue); }
-    
-    .date-group { display: flex; align-items: center; flex: 1; justify-content: space-between; gap: 2px; min-width: 0; }
-    .date-item { display: flex; align-items: center; flex: 1; min-width: 0; }
-    .date-item.year-item { flex: 1.3; } 
-    select.date-input { background: var(--bg-main); border: 1px solid var(--border-color); color: var(--text-main); height: 26px; border-radius: 4px; font-size: 13px; font-weight: bold; outline: none; appearance: none; -webkit-appearance: none; padding: 0; text-align: center; text-align-last: center; cursor: pointer; width: 100%; min-width: 0; }
-    .date-text { color: var(--text-gray); font-size: 13px; margin: 0 1px 0 2px; flex-shrink: 0; }
-    
-    .btn-red { background: #d34e55; color: #fff; border: none; border-radius: 6px; font-size: 13px; font-weight: bold; cursor: pointer; width: 52px; height: 28px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; padding: 0; }
-    
-    .btn-big-start { background: var(--text-gold); color: #fff; border: none; border-radius: 8px; font-size: 15px; font-weight: bold; text-shadow: 0 1px 2px rgba(0,0,0,0.2); width: 52px; cursor: pointer; display: flex; align-items: center; justify-content: center; letter-spacing: 2px; transition: 0.2s; flex-shrink: 0; padding: 0; }
-    .btn-big-start:active { transform: scale(0.95); opacity: 0.9; }
-    
-    .zhen-group { display: flex; flex: 1; gap: 4px; min-width: 0; }
-    .zhen-item { background: var(--bg-main); border: 1px solid var(--border-color); border-radius: 6px; padding: 0 4px; display: flex; align-items: center; justify-content: center; height: 30px; box-sizing: border-box; min-width: 0; }
-    .zhen-item input[type="checkbox"] { margin-right: 4px; accent-color: var(--text-blue); }
-    .zhen-item select, .zhen-item input[type="number"] { background: transparent; border: none; color: var(--text-main); width: 100%; height: 100%; line-height: normal; text-align: center; outline: none; font-size: 13px; -webkit-appearance: none; appearance: none; padding: 0; margin: 0; vertical-align: middle; }
-    .zhen-item select { color: var(--text-blue); text-align-last: center; }
-    
-    .sub-ctrl { display: flex; justify-content: space-between; align-items: center; border-top: 1px dashed var(--border-color); padding-top: 8px; margin-top: 0; gap: 4px; }
-    .sub-text { color: var(--text-gray); font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-shrink: 1; }
-    .select-group { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
-    .select-group select { background: var(--bg-main); border: 1px solid var(--border-color); color: var(--text-blue); padding: 0 6px; height: 26px; line-height: 24px; border-radius: 4px; font-size: 13px; outline: none; -webkit-appearance: none; appearance: none; text-align: center; text-align-last: center; }
-    .btn-theme { background: var(--bg-main); border: 1px solid var(--border-color); color: var(--text-main); padding: 0 6px; height: 26px; line-height: 24px; border-radius: 4px; font-size: 13px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-    
-    /* ========================================================= */
-    /* 3. 中间信息展示区 */
-    /* ========================================================= */
-    .info-board { margin-bottom: 15px; }
-    .bazi-row { display: flex; justify-content: space-between; margin-bottom: 12px; }
-    .bazi-box { background: var(--panel-bg); border: 1px solid var(--border-color); border-radius: 6px; width: 23%; text-align: center; padding: 8px 0; transition: all 0.3s; }
-    .bazi-title { font-size: 13px; color: var(--text-gray); margin-bottom: 6px; }
-    .bazi-value { font-size: 16px; font-weight: bold; color: var(--text-gold); }
-    .info-row { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--text-gray); margin-bottom: 8px; }
-    .zhifu-row { margin: 12px 0; }
-    .pill-green { background: rgba(37, 185, 85, 0.1); color: var(--c-gate-g); border: 1px solid var(--c-gate-g); padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: bold; }
-    
-    .circle-logo { width: 32px; height: 32px; border-radius: 50%; border: 2px solid var(--text-gold); background: var(--panel-bg); color: var(--text-main); display: flex; justify-content: center; align-items: center; font-weight: bold; font-size: 20px; line-height: 1; cursor: pointer; transition: 0.2s; box-shadow: 0 0 8px rgba(226,180,95,0.2); }
-    .circle-logo:active { transform: scale(0.9); background: var(--text-gold); color: #000; }
-    
-    /* ========================================================= */
-    /* 4. 九宫格核心样式区 */
-    /* ========================================================= */
-    .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--gold-line); border: 1px solid var(--gold-line); border-radius: 4px; padding: 1px; margin: 0; }
-    
-    .cell { background: var(--cell-bg); position: relative; height: 125px; box-sizing: border-box; transition: background 0.3s; }
-    .center-cell { background: var(--cell-bg); display: flex; justify-content: center; align-items: center; position: relative; transition: background 0.3s; }
-    
-    .hidden-stem-text { color: var(--dark-stem-color); font-weight: bold; font-size: 13px; }
-    .palace-row { position: absolute; bottom: 6px; left: 12px; right: 20px; border-top: 1px dashed var(--border-color); padding-top: 4px; display: flex; justify-content: space-between; align-items: center; color: var(--palace-text); font-size: 13px; z-index: 10; }
-    .inner-content { position: absolute; top: 45%; left: 50%; transform: translate(-50%, -50%); width: calc(100% - 40px); display: flex; flex-direction: column; gap: 9px; z-index: 10; }
-    
-    .deity-text { font-size: 23px; }
-    .star-text  { font-size: 18px; }
-    .gate-text  { font-size: 18px; }
-    .taichi-svg { width: 115px; height: 115px; filter: drop-shadow(0 0 8px rgba(0,0,0,0.4)); }
-    
-    .dz-top, .dz-bottom, .dz-left, .dz-right { position: absolute; color: var(--palace-text); font-size: 13px; font-weight: bold; opacity: 0.6; z-index: 5; pointer-events: none; transition: all 0.3s; }
-    .dz-top { top: 1px; left: 50%; transform: translateX(-50%); }
-    .dz-bottom { bottom: 6px; left: 50%; transform: translateX(-50%); } 
-    .dz-left { left: 2px; top: 46%; transform: translateY(-50%); }
-    .dz-right { right: 2px; top: 46%; transform: translateY(-50%); }
-    .dz-out-top { top: -20px; }
-    
-    .tag-ma { color: #ffffff; background: #d34e55; padding: 1px 4px; border-radius: 3px; font-size: 12px; font-weight: bold; border: none; }
-    .tag-kong { color: #ffffff; background: #7a7a90; padding: 1px 4px; border-radius: 3px; font-size: 12px; font-weight: bold; border: none; }
-    .tag-jx { color: #ffffff; background: #8b5cf6; padding: 1px 4px; border-radius: 3px; font-size: 12px; font-weight: bold; border: none; }
-    .tag-mu { color: #ffffff; background: #374151; padding: 1px 4px; border-radius: 3px; font-size: 12px; font-weight: bold; border: none; }
-    .tag-po { color: #ffffff; background: #d97706; padding: 1px 4px; border-radius: 3px; font-size: 12px; font-weight: bold; border: none; }
-    
-    .row { display: flex; justify-content: space-between; align-items: flex-end; }
-    .left-item { text-align: left; font-weight: bold; line-height: 1; white-space: nowrap; letter-spacing: 1px; }
-    .right-item { text-align: right; font-size: 14px; font-weight: bold; line-height: 1; white-space: nowrap; }
-    .small-stem-h { font-size: 17px !important; letter-spacing: -1px; }
-    .small-stem-e { font-size: 12px !important; letter-spacing: -1px; }
-    
-    .edeity-text { font-size: 13px; color: var(--edeity-text); font-weight: bold; }
-    .deity { color: var(--c-deity); }
-    .star { color: var(--c-star); }
-    .gate-g { color: var(--c-gate-g); }
-    .gate-r { color: var(--c-gate-r); }
-    .gate-n { color: var(--c-gate-n); }
-    .stem-h { color: var(--c-stem-h); font-size: 17px; } 
-    .stem-e { color: var(--c-stem-e); font-size: 14px; } 
-
-    /* 用神高亮红框样式 */
-    .highlight-ys {
-      outline: 2px solid #dc2626 !important;
-      outline-offset: 2px;
-      border-radius: 3px;
-     /* background-color: rgba(220, 38, 38, 0.15) !important; /* <--- 就是这行红底背景 */
-      display: inline-block;
-      z-index: 99;
-      transition: all 0.2s;
-    }
-
-    @media (min-width: 600px) {
-      body { max-width: 520px; padding: 16px; }
-      .cell { height: 145px; }
-      .deity-text { font-size: 25px; }
-      .star-text  { font-size: 20px; }
-      .gate-text  { font-size: 20px; }
-      .taichi-svg { width: 130px; height: 130px; }
-    }
-  </style>
-
-  <script src="./oogo-lf.js"></script>
-  <script src="./oogo-image.js"></script>
-  <script src="./oogo-sf.js"></script>
-</head>
-  
-<body>
-
-  <div class="top-ctrl">
-    <div class="ctrl-row">
-      <div class="badge badge-gong">公</div>
-      <div class="date-group">
-        <div class="date-item year-item"><select id="selY" class="date-input" onchange="updateDynamicInfo()"></select><span class="date-text">年</span></div>
-        <div class="date-item"><select id="selM" class="date-input" onchange="updateDynamicInfo()"></select><span class="date-text">月</span></div>
-        <div class="date-item"><select id="selD" class="date-input" onchange="updateDynamicInfo()"></select><span class="date-text">日</span></div>
-        <div class="date-item"><select id="selH" class="date-input" onchange="updateDynamicInfo()"></select><span class="date-text">时</span></div>
-        <div class="date-item"><select id="selMin" class="date-input" onchange="updateDynamicInfo()"></select><span class="date-text">分</span></div>
-      </div>
-      <button class="btn-red" onclick="setNowTime()">现在</button>
-    </div>
-
-    <div class="ctrl-row">
-  <!-- 替换下面这一行 -->
-  <div class="badge badge-nong" onclick="toggleChangSheng()" style="cursor:pointer; transition:all 0.3s;" title="点击切换十二长生">节</div>
-      <div style="flex: 1; background: var(--bg-main); border: 1px solid var(--border-color); height: 26px; border-radius: 4px; display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 0 2px; box-sizing: border-box;">
-        <div id="jieqiRange" style="white-space: nowrap; font-size: min(11.5px, 2.9vw); font-weight: bold; color: var(--text-main); letter-spacing: -0.2px;">
-          加载节气中...
-        </div>
-      </div>
-    </div>
-
-    <div class="ctrl-row" style="align-items: stretch; margin-bottom: 0;">
-      <div style="flex: 1; display: flex; flex-direction: column; justify-content: space-between; min-width: 0; gap: 8px;">
-        
-        <div style="display: flex; gap: 8px; align-items: center; min-width: 0;">
-          <!-- ★ 修改点 1：把“真”字标签改造成吉凶开关，并加了 onclick 事件 -->
-          <div class="badge badge-zhen" onclick="toggleGeJu()" style="cursor:pointer;" title="点击开启隐藏吉凶扫描">真</div>
-          <div class="zhen-group">
-            <label class="zhen-item" style="flex: 0.8; cursor: pointer;">
-              <input type="checkbox" id="useTrueSolar" checked onchange="updateDynamicInfo()">
-              <span style="color:var(--text-gray); font-size:13px; white-space:nowrap;">太阳时</span>
-            </label>
-            <div class="zhen-item" style="flex: 1;">
-              <select id="citySelect" onchange="document.getElementById('longitude').value = this.value; updateDynamicInfo()">
-                <optgroup label="华北地区">
-                  <option value="116.40">北京</option><option value="117.20" selected>天津</option><option value="114.48">石家庄</option><option value="112.53">太原</option><option value="111.65">呼和浩特</option>
-                </optgroup>
-                <optgroup label="东北地区">
-                  <option value="123.38">沈阳</option><option value="125.35">长春</option><option value="126.63">哈尔滨</option><option value="121.62">大连</option>
-                </optgroup>
-                <optgroup label="华东地区">
-                  <option value="121.47">上海</option><option value="118.78">南京</option><option value="120.19">杭州</option><option value="117.27">合肥</option><option value="119.30">福州</option><option value="115.89">南昌</option><option value="117.00">济南</option><option value="120.33">青岛</option><option value="118.10">厦门</option>
-                </optgroup>
-                <optgroup label="华中地区">
-                  <option value="113.62">郑州</option><option value="114.31">武汉</option><option value="113.00">长沙</option>
-                </optgroup>
-                <optgroup label="华南地区">
-                  <option value="113.23">广州</option><option value="114.05">深圳</option><option value="108.33">南宁</option><option value="110.35">海口</option>             
-                </optgroup>
-                <optgroup label="西南地区">
-                  <option value="106.50">重庆</option><option value="104.06">成都</option><option value="106.71">贵阳</option><option value="102.73">昆明</option><option value="91.11">拉萨</option>
-                </optgroup>
-                <optgroup label="西北地区">
-                  <option value="108.95">西安</option><option value="103.73">兰州</option><option value="106.27">银川</option><option value="87.68">乌鲁木齐</option>
-                </optgroup>
-                <optgroup label="港澳台">
-                  <option value="114.17">香港</option><option value="113.33">澳门</option><option value="121.50">台北</option>
-                </optgroup>
-              </select>
-            </div>
-            <div class="zhen-item" style="flex: 0.9;">
-              <input type="number" id="longitude" value="117.20" step="0.01" onchange="updateDynamicInfo()">
-            </div>
-          </div>
-        </div>
-
-        <div class="sub-ctrl">
-          <div class="sub-text" style="cursor: pointer; font-weight: 900; font-size: 16px; letter-spacing: 0.5px; display: flex; align-items: center; gap: 5px;" onclick="isChartGenerated = false; renderDefaultBoard();" title="返回初始画面"> 
-            <svg viewBox="0 0 200 200" style="width: 17px; height: 17px; flex-shrink: 0;"><circle cx="100" cy="100" r="98" fill="#ffffff" stroke="#9ca3af" stroke-width="4"/><path d="M 100 2 A 98 98 0 0 1 100 198 C 49 198, 49 100, 100 100 C 151 100, 151 2, 100 2 Z" fill="#000000"/><circle cx="100" cy="51" r="15" fill="#000000"/><circle cx="100" cy="149" r="15" fill="#ffffff"/></svg>
-            <div><span style="color: #4dc2c6;">O</span><span style="color: #a5d054;">O</span><span style="color: #f5ae56;">G</span><span style="color: #ea7773;">O</span></div>
-          </div>         
-          <div class="select-group">
-            <select id="methodSelect" onchange="saveSettings()">
-              <option value="zhirun" selected>置闰法</option><option value="chaibu">拆补法</option><option value="maoshan">茅山法</option>
-            </select>
-            <select id="panSelect" onchange="updatePanMenu(); saveSettings()">
-              <option value="zhuan" selected>转盘</option><option value="fei">飞盘</option>
-            </select>
-            <select id="jigongSelect" onchange="saveSettings()">
-              <option value="ji2" selected>寄2宫</option><option value="y8y2">阳8阴2</option>
-            </select>
-            <button class="btn-theme" onclick="toggleTheme()">🎨 主题</button>
-          </div>
-        </div>
-
-    </div>
-      <button class="btn-big-start" onclick="generateChart()">起局</button>
-    </div>
-  </div>
-
-  <div class="info-board" id="infoBoard"></div>
-  <div class="grid" id="chartGrid"></div>
-
-  <script>
-    window.onerror = function(msg, url, line) { console.error("系统错误: " + msg + " (行: " + line + ")"); };
-
-    let isChartGenerated = false;
-    let showGeJu = false; // ★ 修改点 2：增加全局变量记录是否开启格局显示
-    let currentYsVal = ''; // 记录当前选择的用神类别
-    let showChangSheng = false; // ★ 记录十二长生开关状态
-
-// ★ 十二长生切换控制函数
-function toggleChangSheng() {
-  showChangSheng = !showChangSheng;
-  const nongBadge = document.querySelector('.badge-nong');
-  if (showChangSheng) {
-    nongBadge.style.background = 'var(--text-gold)';
-    nongBadge.style.color = '#000';
-  } else {
-    nongBadge.style.background = 'rgba(91, 146, 214, 0.15)';
-    nongBadge.style.color = 'var(--text-blue)';
+    return res.join(''); // 返回组合字符串，如 "沐" 或 "衰病"
   }
-  
-  if (isChartGenerated) {
-    generateChart(); 
-  } else {
-    showToast(showChangSheng ? '🌱 十二长生：已开启' : '🌱 十二长生：已关闭');
+
+// ============================================================
+// 三、CalendarAdapter
+// ============================================================
+const CalendarAdapter = {
+  getDayGanZhi(year, month, day) {
+    const solar = OogoCalendar.Solar.fromYmdHms(year, month, day, 12, 0, 0);
+    const lunar = OogoCalendar.Lunar.fromSolar(solar);
+    return { stem: lunar.getDayGanExact(), branch: lunar.getDayZhiExact() };
+  },
+  getFullChart(year, month, day, hour, min, sec = 0) {
+    let baziY = year, baziM = month, baziD = day, baziH = hour;
+    if (hour >= 23) {
+        let nextD = new Date(year, month - 1, day + 1);
+        baziY = nextD.getFullYear(); baziM = nextD.getMonth() + 1; baziD = nextD.getDate(); baziH = 0; 
+    }
+    const solar = OogoCalendar.Solar.fromYmdHms(baziY, baziM, baziD, baziH, min, sec);
+    const lunar = OogoCalendar.Lunar.fromSolar(solar);
+    const origSolar = OogoCalendar.Solar.fromYmdHms(year, month, day, hour, min, sec);
+    const origLunar = OogoCalendar.Lunar.fromSolar(origSolar);
+    const prevJieQi = origLunar.getPrevJieQi();
+    
+    return {
+      fourPillars: {
+        year: { stem: lunar.getYearGanExact(), branch: lunar.getYearZhiExact() },
+        month: { stem: lunar.getMonthGanExact(), branch: lunar.getMonthZhiExact() },
+        day: { stem: lunar.getDayGanExact(), branch: lunar.getDayZhiExact() },
+        hour: { stem: lunar.getTimeGan(), branch: lunar.getTimeZhi() }
+      },
+      timeInfo: { solarTerm: prevJieQi.getName(), solarTermTime: prevJieQi.getSolar().toYmdHms() },
+      palaces: [1, 2, 3, 4, 5, 6, 7, 8, 9].map(pos => ({ position: pos }))
+    };
+  },
+  getSolarTermInfo(year, month, day) {
+    const solar = OogoCalendar.Solar.fromYmdHms(year, month, day, 12, 0, 0);
+    const lunar = OogoCalendar.Lunar.fromSolar(solar);
+    const jq = lunar.getPrevJieQi();
+    return { name: jq.getName(), exactTime: jq.getSolar().toYmdHms() };
   }
-}
-    // 切换用神选项触发
-    function changeYS(val) {
-      currentYsVal = val;
-      applyYongShenHighlight();
+};
+
+// ============================================================
+// 四、符头系统与节气扫描器
+// ============================================================
+const QimenFuTou = {
+  getFuTouDate(year, month, day) {
+    const dayGZ = CalendarAdapter.getDayGanZhi(year, month, day);
+    const stem = dayGZ.stem;
+    const offset =
+      stem === "甲" || stem === "己" ? 0 : stem === "乙" ? 1 : stem === "丙" ? 2 :
+      stem === "丁" ? 3 : stem === "戊" ? 4 : stem === "庚" ? 1 : stem === "辛" ? 2 :
+      stem === "壬" ? 3 : 4;
+    const date = QimenUtil.dateOnly(year, month, day);
+    const fuTouDate = QimenUtil.nextDate(date, -offset);
+    const gz = CalendarAdapter.getDayGanZhi(fuTouDate.getFullYear(), fuTouDate.getMonth() + 1, fuTouDate.getDate());
+    return { date: fuTouDate, stem: gz.stem, branch: gz.branch, ganZhi: gz.stem + gz.branch };
+  },
+  getYuanFromFuTou(fuTouGanZhi) {
+    const branch = fuTouGanZhi.branch;
+    if (["子", "午", "卯", "酉"].includes(branch)) return { index: 0, name: "上元" };
+    if (["寅", "申", "巳", "亥"].includes(branch)) return { index: 1, name: "中元" };
+    if (["辰", "戌", "丑", "未"].includes(branch)) return { index: 2, name: "下元" };
+    throw new Error(`无法判定三元：${fuTouGanZhi.stem}${branch}`);
+  }
+};
+
+const QimenSolarTerm = {
+  findPreviousTerm(date, maxDays = 20) {
+    let d = QimenUtil.dateOnly(date.getFullYear(), date.getMonth() + 1, date.getDate());
+    let currentInfo = CalendarAdapter.getSolarTermInfo(d.getFullYear(), d.getMonth() + 1, d.getDate());
+    let currentName = currentInfo.name;
+    for (let i = 0; i <= maxDays; i++) {
+      const info = CalendarAdapter.getSolarTermInfo(d.getFullYear(), d.getMonth() + 1, d.getDate());
+      if (info.name !== currentName) {
+        const termDate = QimenUtil.nextDate(d, 1);
+        return { name: currentName, date: termDate };
+      }
+      d = QimenUtil.nextDate(d, -1);
+    }
+    return { name: currentName, date: d };
+  },
+  isYangDun(termName) { return QimenConst.YANG_TERMS.includes(termName); },
+  getJuTable(termName, isYang) {
+    const table = isYang ? QimenConst.YANG_JU : QimenConst.YIN_JU;
+    return table[termName] || null;
+  }
+};
+
+// ============================================================
+// 五、置闰、拆补、茅山引擎
+// ============================================================
+const OogoZhiRun = {
+  createDate(y, m, d) { return new Date(y, m - 1, d, 12, 0, 0, 0); },
+  addDays(date, days) { let d = new Date(date.getTime()); d.setDate(d.getDate() + days); return d; },
+  diffDays(d1, d2) { return Math.round((d1.getTime() - d2.getTime()) / 86400000); },
+  getDayGanzhiIndex(date) {
+    let y = date.getFullYear(), m = date.getMonth() + 1, d = date.getDate();
+    let chart = CalendarAdapter.getDayGanZhi(y, m, d);
+    return QimenUtil.findStemBranchIndex(chart.stem, chart.branch);
+  },
+  getSolsticeDate(year, isWinter) {
+    let m = isWinter ? 12 : 6;
+    let targetTerm = isWinter ? "冬至" : "夏至";
+    for (let d = 15; d <= 25; d++) {
+        let chart = CalendarAdapter.getSolarTermInfo(year, m, d);
+        if (chart.name === targetTerm) {
+            let prevChart = CalendarAdapter.getSolarTermInfo(year, m, d - 1);
+            if (prevChart.name !== targetTerm) return this.createDate(year, m, d);
+        }
+    }
+    return this.createDate(year, m, 21);
+  },
+  getAnchorUpperYuan(solsticeDate) {
+    for (let offset = -9; offset <= 5; offset++) {
+        let d = this.addDays(solsticeDate, offset);
+        if (this.getDayGanzhiIndex(d) % 15 === 0) return d;
+    }
+    return solsticeDate;
+  },
+  getTermStartDateExact(termName, targetDate) {
+    for (let d = -30; d <= 30; d++) {
+        let testDate = this.addDays(targetDate, d);
+        let chart = CalendarAdapter.getSolarTermInfo(testDate.getFullYear(), testDate.getMonth() + 1, testDate.getDate());
+        if (chart.name === termName) {
+            let prevDate = this.addDays(testDate, -1);
+            let prevChart = CalendarAdapter.getSolarTermInfo(prevDate.getFullYear(), prevDate.getMonth() + 1, prevDate.getDate());
+            if (prevChart.name !== termName) return testDate;
+        }
+    }
+    return targetDate; 
+  },
+  calculate(year, month, day, hour, min, sec = 0) {
+    const fullChart = CalendarAdapter.getFullChart(year, month, day, hour, min, sec);
+    let tYear = year, tMonth = month, tDay = day;
+    if (hour >= 23) {
+        let nextD = new Date(year, month - 1, day + 1);
+        tYear = nextD.getFullYear(); tMonth = nextD.getMonth() + 1; tDay = nextD.getDate();
+    }
+    let targetDate = this.createDate(tYear, tMonth, tDay);
+
+    let SS_prev = this.getSolsticeDate(tYear - 1, false), WS_prev = this.getSolsticeDate(tYear - 1, true);
+    let SS_curr = this.getSolsticeDate(tYear, false), WS_curr = this.getSolsticeDate(tYear, true);
+
+    let A_SS_prev = this.getAnchorUpperYuan(SS_prev), A_WS_prev = this.getAnchorUpperYuan(WS_prev);
+    let A_SS_curr = this.getAnchorUpperYuan(SS_curr), A_WS_curr = this.getAnchorUpperYuan(WS_curr);
+
+    let FT_D = null;
+    for (let offset = 0; offset >= -14; offset--) {
+        let d = this.addDays(targetDate, offset);
+        if (this.getDayGanzhiIndex(d) % 15 === 0) { FT_D = d; break; }
     }
 
-    // 执行用神高亮的核心逻辑
-    function applyYongShenHighlight() {
-      // 1. 先清除盘面上所有已有的红框
-      document.querySelectorAll('.highlight-ys').forEach(el => {
-        el.classList.remove('highlight-ys');
+    let isYang = true, termsList = QimenConst.YANG_TERMS, baseAnchor = null;
+    if (FT_D.getTime() < A_WS_prev.getTime()) { isYang = false; termsList = QimenConst.YIN_TERMS; baseAnchor = A_SS_prev; } 
+    else if (FT_D.getTime() < A_SS_curr.getTime()) { isYang = true; termsList = QimenConst.YANG_TERMS; baseAnchor = A_WS_prev; } 
+    else if (FT_D.getTime() < A_WS_curr.getTime()) { isYang = false; termsList = QimenConst.YIN_TERMS; baseAnchor = A_SS_curr; } 
+    else { isYang = true; termsList = QimenConst.YANG_TERMS; baseAnchor = A_WS_curr; }
+
+    let diffDays = this.diffDays(FT_D, baseAnchor);
+    let k = Math.round(diffDays / 15);
+    let isTrueRun = false, termIndex = k;
+    if (k >= 12) { termIndex = 11; isTrueRun = true; }
+
+    let termName = termsList[termIndex];
+    let daysSinceFT = this.diffDays(targetDate, FT_D);
+    let yuanIndex = Math.floor(daysSinceFT / 5); 
+    let yuanName = ["上元", "中元", "下元"][yuanIndex];
+
+    let table = isYang ? QimenConst.YANG_JU[termName] : QimenConst.YIN_JU[termName];
+    let juNumber = table[yuanIndex];
+
+    let astroStart = this.getTermStartDateExact(termName, targetDate);
+    let relationDays = this.diffDays(FT_D, astroStart);
+    let relation = relationDays === 0 ? "正授" : (relationDays < 0 ? "超神" : "接气");
+    let superShenDays = relation === "超神" ? Math.abs(relationDays) : 0;
+    if (isTrueRun) relation = "闰奇";
+
+    let fuTouChart = CalendarAdapter.getDayGanZhi(FT_D.getFullYear(), FT_D.getMonth() + 1, FT_D.getDate());
+    let fuTouGanZhi = fuTouChart.stem + fuTouChart.branch;
+
+    return { chart: fullChart, method: "置闰法", juNumber: juNumber, isYangdun: isYang, termName: termName, termDate: astroStart, fuTouDate: FT_D, fuTouGanZhi: fuTouGanZhi, yuanIndex: yuanIndex, yuanName: yuanName, relation: relation, superShenDays: superShenDays, isTrueRun: isTrueRun, debugInfo: {} };
+  }
+};
+
+const OogoChaiBu = {
+  calculate(year, month, day, hour, min, sec = 0) {
+    const fullChart = CalendarAdapter.getFullChart(year, month, day, hour, min, sec);
+    let tYear = year, tMonth = month, tDay = day;
+    if (hour >= 23) {
+        let nextD = new Date(year, month - 1, day + 1);
+        tYear = nextD.getFullYear(); tMonth = nextD.getMonth() + 1; tDay = nextD.getDate();
+    }
+    const date = QimenUtil.dateOnly(tYear, tMonth, tDay);
+    const term = QimenSolarTerm.findPreviousTerm(date);
+    const termName = term.name, termDate = term.date;
+    const days = Math.floor((date.getTime() - termDate.getTime()) / 86400000);
+    let yuanIndex = Math.floor(days / 5);
+    if (yuanIndex < 0) yuanIndex = 0; if (yuanIndex > 2) yuanIndex = 2;
+    const isYang = QimenSolarTerm.isYangDun(termName);
+    const table = QimenSolarTerm.getJuTable(termName, isYang);
+    return { chart: fullChart, method: "拆补法", juNumber: table[yuanIndex], isYangdun: isYang, termName, termDate, yuanIndex, yuanName: ["上元", "中元", "下元"][yuanIndex], debugInfo: {} };
+  }
+};
+
+const OogoMaoShan = {
+  calculate(year, month, day, hour, min, sec = 0) {
+    const fullChart = CalendarAdapter.getFullChart(year, month, day, hour, min, sec);
+    let tYear = year, tMonth = month, tDay = day, tHour = hour;
+    if (hour >= 23) {
+        let nextD = new Date(year, month - 1, day + 1);
+        tYear = nextD.getFullYear(); tMonth = nextD.getMonth() + 1; tDay = nextD.getDate(); tHour = 0;
+    }
+    const targetDate = new Date(tYear, tMonth - 1, tDay, tHour, min, sec);
+    const solar = OogoCalendar.Solar.fromYmdHms(tYear, tMonth, tDay, tHour, min, sec);
+    const lunar = OogoCalendar.Lunar.fromSolar(solar);
+    const jq = lunar.getPrevJieQi(); 
+    const termName = jq.getName();
+    const jqSolar = jq.getSolar();
+    const termExactDate = new Date(jqSolar.getYear(), jqSolar.getMonth() - 1, jqSolar.getDay(), jqSolar.getHour(), jqSolar.getMinute(), jqSolar.getSecond());
+    const diffMs = targetDate.getTime() - termExactDate.getTime();
+    const diffDays = diffMs / (1000 * 60 * 60 * 24);
+    let yuanIndex = Math.floor(diffDays / 5);
+    if (yuanIndex < 0) yuanIndex = 0; if (yuanIndex > 2) yuanIndex = 2;
+    const isYang = QimenSolarTerm.isYangDun(termName);
+    const table = QimenSolarTerm.getJuTable(termName, isYang);
+    return { chart: fullChart, method: "茅山法", juNumber: table[yuanIndex], isYangdun: isYang, termName: termName, termDate: termExactDate, yuanIndex, yuanName: ["上元", "中元", "下元"][yuanIndex], debugInfo: { diffDays: diffDays } };
+  }
+};
+
+// ============================================================
+// 六、神煞与标签
+// ============================================================
+const OogoKongWang = {
+  get(timeStem, timeBranch) {
+    const index = QimenUtil.findStemBranchIndex(timeStem, timeBranch);
+    const xunOffset = index % 10;
+    const branchIndex = QimenUtil.branchIndex(timeBranch);
+    const kong1 = QimenConst.BRANCHES[QimenUtil.mod(branchIndex + (10 - xunOffset), 12)];
+    const kong2 = QimenConst.BRANCHES[QimenUtil.mod(branchIndex + (11 - xunOffset), 12)];
+    return [kong1, kong2];
+  },
+  branchToPalace(branch) {
+    const map = { "子": 1, "丑": 8, "寅": 8, "卯": 3, "辰": 4, "巳": 4, "午": 9, "未": 2, "申": 2, "酉": 7, "戌": 6, "亥": 6 };
+    return map[branch] || 0;
+  }
+};
+
+const OogoYiMa = {
+  getMaBranch(timeBranch) {
+    if (["申", "子", "辰"].includes(timeBranch)) return "寅";
+    if (["亥", "卯", "未"].includes(timeBranch)) return "巳";
+    if (["寅", "午", "戌"].includes(timeBranch)) return "申";
+    if (["巳", "酉", "丑"].includes(timeBranch)) return "亥";
+    return "";
+  },
+  branchToPalace(branch) { return { "寅": 8, "巳": 4, "申": 2, "亥": 6 }[branch] || 0; },
+  calculate(timeBranch) {
+    const branch = this.getMaBranch(timeBranch);
+    return { branch, palace: this.branchToPalace(branch) };
+  }
+};
+
+const OogoFuFan = {
+  starBase: { 1: "天蓬", 2: "天芮", 3: "天冲", 4: "天辅", 6: "天心", 7: "天柱", 8: "天任", 9: "天英" },
+  gateBase: { 1: "休门", 2: "死门", 3: "伤门", 4: "杜门", 6: "开门", 7: "惊门", 8: "生门", 9: "景门" },
+  opposite: { 1: 9, 9: 1, 2: 8, 8: 2, 3: 7, 7: 3, 4: 6, 6: 4 },
+  analyze(palaces) {
+    let starFu = true, gateFu = true, starFan = true, gateFan = true;
+    for (const p of palaces) {
+      if (p.position === 5) continue;
+      let star = Array.isArray(p.star) ? p.star[0] : p.star;
+      if (star && star.includes("/天禽")) star = star.replace("/天禽", "");
+      const gate = p.gate || "";
+      if (star !== this.starBase[p.position]) starFu = false;
+      if (gate && gate !== this.gateBase[p.position]) gateFu = false;
+      const opposite = this.opposite[p.position];
+      if (star !== this.starBase[opposite]) starFan = false;
+      if (gate && gate !== this.gateBase[opposite]) gateFan = false;
+    }
+    let text = "";
+    if (starFu && gateFu) text = "星门俱伏";
+    else if (starFan && gateFan) text = "星门俱反";
+    else if (starFu) text = "星伏"; else if (starFan) text = "星反";
+    else if (gateFu) text = "门伏"; else if (gateFan) text = "门反";
+    return { starFu, gateFu, starFan, gateFan, text };
+  }
+};
+const OogoTagEnhancer = {
+  enhance(chart) {
+    const timeStem = chart.fourPillars.hour.stem;
+    const timeBranch = chart.fourPillars.hour.branch;
+    const kong = OogoKongWang.get(timeStem, timeBranch);
+    const kongPalaces = kong.map(b => OogoKongWang.branchToPalace(b)).filter(Boolean);
+    const ma = OogoYiMa.calculate(timeBranch);
+
+    chart.palaces.forEach(p => {
+      // 提取主天干和主地干
+      const hStem = Array.isArray(p.heavenlyStem) ? p.heavenlyStem[0] : p.heavenlyStem;
+      const eStem = Array.isArray(p.earthlyStem) ? p.earthlyStem[0] : p.earthlyStem;
+
+      // 原有的标签逻辑
+      p.uiTagKong = kongPalaces.includes(p.position);
+      p.uiTagMa = (p.position === ma.palace);
+      p.uiTagJx = QimenUtil.isJiXing(hStem, p.position);
+      p.uiTagPo = QimenUtil.isMenPo(p.gate, p.position);
+      p.uiTagMu = QimenUtil.isTianGanMu(hStem, p.position);
+      p.liuYiJiXing = { hasJiXing: p.uiTagJx };
+      p.gatePressure = { hasPressure: p.uiTagPo, text: p.uiTagPo ? "门迫" : "" };
+      p.tombInfo = { heavenlyStemInTomb: p.uiTagMu ? [hStem] : [], earthlyStemInTomb: [] };
+      
+      // ==========================================
+      // ★ 新增：将十二长生状态作为属性写入返回的数据中
+      // ==========================================
+      p.heavenlyChangsheng = QimenUtil.getChangSheng(hStem, p.position);
+      p.earthlyChangsheng = QimenUtil.getChangSheng(eStem, p.position);
+    });
+
+    chart.kongWang = { branches: kong, palaces: kongPalaces };
+    chart.yiMa = ma;
+    chart.uiTagFuYinFanYin = OogoFuFan.analyze(chart.palaces);
+    return chart;
+  }
+};
+
+// ============================================================
+// 七、OogoGeJu 吉凶格局扫描器
+// ============================================================
+const OogoGeJu = {
+  StemPatterns: {
+    "戊戊": { name: "伏吟", type: "凶", desc: "凡事不利，道路闭塞，以守为佳。" },
+    "戊乙": { name: "青龙和会", type: "吉", desc: "门吉事吉，门凶事凶，利合伙谋事。" },
+    "戊丙": { name: "青龙返首", type: "大吉", desc: "动作大吉，谋事顺利，若逢迫墓吉变凶。" },
+    "戊丁": { name: "青龙耀明", type: "大吉", desc: "宜见上级、贵人、求功名，若逢墓迫即招是非。" },
+    "戊己": { name: "贵人入狱", type: "凶", desc: "公私皆不利，凡事有阻碍。" },
+    "戊庚": { name: "值符飞宫", type: "大凶", desc: "吉事不吉，凶事更凶，求财破败，交战必败。" },
+    "戊辛": { name: "青龙折足", type: "凶", desc: "吉门生助尚可谋为，若逢凶门主招灾、破财。" },
+    "戊壬": { name: "青龙入天牢", type: "凶", desc: "凡事无结果，阴阳皆不吉。" },
+    "戊癸": { name: "青龙华盖", type: "吉", desc: "门吉招福，门凶多乖，利合作。" },
+
+    "乙戊": { name: "阴害阳门", type: "凶", desc: "利阴人、阴事，不利阳人、公开之事。" },
+    "乙乙": { name: "日奇伏吟", type: "凶", desc: "不宜见上级贵人，不宜进取，只宜安分守己。" },
+    "乙丙": { name: "奇仪顺遂", type: "吉", desc: "吉星迁官晋职，凶星夫妻离别。" },
+    "乙丁": { name: "奇仪相佐", type: "吉", desc: "文书事吉，百事可为。" },
+    "乙己": { name: "日奇入墓", type: "凶", desc: "被土暗昧，门凶更凶，主破财、隐匿。" },
+    "乙庚": { name: "日奇被刑", type: "凶", desc: "太白退度，财产争讼，夫妻怀私。" },
+    "乙辛": { name: "青龙逃走", type: "大凶", desc: "人亡财破，奴仆拐带，女逃男走。" },
+    "乙壬": { name: "日奇入地", type: "凶", desc: "尊卑悖乱，官讼是非，有人谋害。" },
+    "乙癸": { name: "华盖逢星", type: "吉", desc: "遁迹修道，隐匿藏形，避灾避难为吉。" },
+
+    "丙戊": { name: "飞鸟跌穴", type: "大吉", desc: "百事吉，不劳而获，谋为大成就。" },
+    "丙乙": { name: "日月并行", type: "吉", desc: "公私皆吉，退让为宜。" },
+    "丙丙": { name: "月奇悖师", type: "凶", desc: "文书逼迫，破耗遗失，主客皆不利。" },
+    "丙丁": { name: "星奇朱雀", type: "吉", desc: "贵人吉庆，常人平静，文章显达。" },
+    "丙己": { name: "火悖入土", type: "凶", desc: "主囚人刑杖，文书不行，吉门得吉，凶门转凶。" },
+    "丙庚": { name: "荧入太白", type: "凶", desc: "门户破败，盗贼耗失，事业亦衰。" },
+    "丙辛": { name: "奇神合明", type: "吉", desc: "谋事成就，病人不凶。" },
+    "丙壬": { name: "火入天罗", type: "凶", desc: "为客不利，是非颇多。" },
+    "丙癸": { name: "华盖悖师", type: "凶", desc: "阴人害事，灾祸频生。" },
+
+    "丁戊": { name: "青龙转光", type: "大吉", desc: "官人升迁，常人威信大增。" },
+    "丁乙": { name: "玉女奇生", type: "吉", desc: "人遁吉格，贵人加官晋爵，常人有喜庆。" },
+    "丁丙": { name: "星随月转", type: "吉", desc: "贵人越级高升，常人逢凶化吉。" },
+    "丁丁": { name: "奇入太阴", type: "吉", desc: "文书证件即至，事多如意。" },
+    "丁己": { name: "火入勾陈", type: "凶", desc: "因女人或私情事起风波。" },
+    "丁庚": { name: "玉女乘龙", type: "吉", desc: "文书阻隔，但出行吉利。" },
+    "丁辛": { name: "朱雀入狱", type: "凶", desc: "罪人释囚，官人失位。" },
+    "丁壬": { name: "奇门合德", type: "吉", desc: "贵人恩惠，讼事和解，利婚姻合伙。" },
+    "丁癸": { name: "朱雀投江", type: "大凶", desc: "文书沉溺，音信全无，官司口舌。" },
+
+    "己戊": { name: "犬遇青龙", type: "吉", desc: "门吉谋望遂意，门凶枉费心机。" },
+    "己乙": { name: "墓神不明", type: "凶", desc: "地户逢星，宜暗中行事，不宜公开。" },
+    "己丙": { name: "火星地户", type: "凶", desc: "男人冤枉，女人受辱。" },
+    "己丁": { name: "朱雀入墓", type: "凶", desc: "文书词讼先曲后直。" },
+    "己己": { name: "地户逢鬼", type: "凶", desc: "病者发凶，百事不遂。" },
+    "己庚": { name: "刑格返名", type: "凶", desc: "词讼先动者不利，退期可免。" },
+    "己辛": { name: "游魂入墓", type: "凶", desc: "大人见怪，小人招殃。" },
+    "己壬": { name: "地网高张", type: "凶", desc: "狡童佚女，奸情伤杀。" },
+    "己癸": { name: "地刑玄武", type: "凶", desc: "男女疾病垂危，有词讼势端。" },
+
+    "庚戊": { name: "天乙伏宫", type: "大凶", desc: "百事不可谋为，凶。" },
+    "庚乙": { name: "太白逢星", type: "凶", desc: "退吉进凶，谋为多阻隔。" },
+    "庚丙": { name: "太白入荧", type: "凶", desc: "测贼贼必来，为客进利，为主破财。" },
+    "庚丁": { name: "亭亭之格", type: "凶", desc: "因私起因，官非不息。" },
+    "庚己": { name: "官符刑格", type: "凶", desc: "官讼被重判，破财伤灾。" },
+    "庚庚": { name: "太白同宫", type: "大凶", desc: "官灾横祸，兄弟雷攻。" },
+    "庚辛": { name: "白虎干格", type: "大凶", desc: "远行车折马死，求财大败。" },
+    "庚壬": { name: "上格", type: "凶", desc: "远行失迷道路，男女音信难通。" },
+    "庚癸": { name: "大格", type: "大凶", desc: "多主车祸、刑伤、求财大败。" },
+
+    "辛戊": { name: "困龙被伤", type: "凶", desc: "主因财起讼，防他人暗算。" },
+    "辛乙": { name: "白虎猖狂", type: "大凶", desc: "家败人亡，远行多殃，测婚离散。" },
+    "辛丙": { name: "干合悖师", type: "吉", desc: "门吉事吉，门凶事凶，测事易有牵连。" },
+    "辛丁": { name: "狱神得奇", type: "吉", desc: "经商获倍利，囚人逢赦免。" },
+    "辛己": { name: "入狱自刑", type: "凶", desc: "奴仆背主，有苦诉讼难伸。" },
+    "辛庚": { name: "白虎出力", type: "大凶", desc: "刀刃相接，主客相残，退让为宜。" },
+    "辛辛": { name: "伏吟天庭", type: "凶", desc: "公废私就，讼狱自惹。" },
+    "辛壬": { name: "凶蛇入狱", type: "凶", desc: "两男争女，讼狱不息。" },
+    "辛癸": { name: "天牢华盖", type: "凶", desc: "日月失明，误入天网，动止乖张。" },
+
+    "壬戊": { name: "小蛇化龙", type: "吉", desc: "男人发达，女人产婴童。" },
+    "壬乙": { name: "小蛇得势", type: "吉", desc: "女人柔顺，男人通达，测孕生子。" },
+    "壬丙": { name: "水蛇入火", type: "凶", desc: "官灾刑禁，络绎不绝。" },
+    "壬丁": { name: "干合星奇", type: "吉", desc: "文书词讼贵人解救，利合作。" },
+    "壬己": { name: "反吟蛇刑", type: "凶", desc: "大祸将至，顺守可保全。" },
+    "壬庚": { name: "太白擒蛇", type: "吉", desc: "刑狱公平，立案昭雪。" },
+    "壬辛": { name: "腾蛇相缠", type: "凶", desc: "纵有吉门亦不能安宁，若有谋望被人欺瞒。" },
+    "壬壬": { name: "蛇入地罗", type: "凶", desc: "外人缠绕，内事索索，吉门吉星化解。" },
+    "壬癸": { name: "幼女奸淫", type: "凶", desc: "家有丑声，门吉星吉者反可进益。" },
+
+    "癸戊": { name: "天乙会合", type: "吉", desc: "吉门宜求财，婚姻喜庆，吉人赞助。" },
+    "癸乙": { name: "华盖逢星", type: "吉", desc: "贵人禄位，常人平安。" },
+    "癸丙": { name: "华盖悖师", type: "凶", desc: "贵贱逢之皆不利，唯上人见喜。" },
+    "癸丁": { name: "腾蛇夭矫", type: "大凶", desc: "文书官司，火焚也逃不掉。" },
+    "癸己": { name: "华盖地户", type: "凶", desc: "男女音信皆阻，躲灾避难为吉。" },
+    "癸庚": { name: "太白入网", type: "凶", desc: "暴力争诉，自作自受。" },
+    "癸辛": { name: "网盖天牢", type: "凶", desc: "占病占讼，死罪难逃。" },
+    "癸壬": { name: "复见腾蛇", type: "凶", desc: "嫁娶重婚，后嫁无子，不保年华。" },
+    "癸癸": { name: "天网四张", type: "大凶", desc: "行人失伴，病讼皆伤，万事不宜行动。" }
+  },
+
+  GatePatterns: {
+    "休门休门": { name: "休加休", type: "吉", desc: "求财进人口，谒见贵人吉，上官赴任、修造大利。" },
+    "休门生门": { name: "休加生", type: "大吉", desc: "主得阴人财物，干恩人谋事必成。" },
+    "休门伤门": { name: "休加伤", type: "凶", desc: "主交加欢乐，但事反必有剥折。" },
+    "休门杜门": { name: "休加杜", type: "凶", desc: "主破财，失物难寻。" },
+    "休门景门": { name: "休加景", type: "平", desc: "主求文书印信不至，反惹口舌是非。" },
+    "休门死门": { name: "休加死", type: "凶", desc: "主文书印信官司事不吉，唯僧道无妨。" },
+    "休门惊门": { name: "休加惊", type: "凶", desc: "主损财惊疑，疾病、惊恐事发。" },
+    "休门开门": { name: "休加开", type: "大吉", desc: "主开谋事成，求财大吉，百事顺利。" },
+
+    "生门休门": { name: "生加休", type: "吉", desc: "主阴人处求谋吉，利求暗财。" },
+    "生门生门": { name: "生加生", type: "大吉", desc: "主远行求财吉，事业旺盛，万事如意。" },
+    "生门伤门": { name: "生加伤", type: "凶", desc: "主亲友变故，道路不通，易生意外。" },
+    "生门杜门": { name: "生加杜", type: "凶", desc: "主阴谋、阴人破财，诸事不利。" },
+    "生门景门": { name: "生加景", type: "平", desc: "主阴人、小人引发口舌之争。" },
+    "生门死门": { name: "生加死", type: "吉", desc: "主田宅词讼，因祸得福，主得他人田宅财物。" },
+    "生门惊门": { name: "生加惊", type: "平", desc: "主尊长财产、词讼，事有迟疑，晚吉。" },
+    "生门开门": { name: "生加开", type: "大吉", desc: "主见贵人，求财大吉，事业开拓。" },
+
+    "伤门休门": { name: "伤加休", type: "凶", desc: "主男性疾病，身体欠安。" },
+    "伤门生门": { name: "伤加生", type: "凶", desc: "主房产、财产有损，破财不利。" },
+    "伤门伤门": { name: "伤加伤", type: "大凶", desc: "主变动、远行皆折伤，大凶之象。" },
+    "伤门杜门": { name: "伤加杜", type: "凶", desc: "主变动、失脱、官非连连。" },
+    "伤门景门": { name: "伤加景", type: "凶", desc: "主文书印信带来口舌是非。" },
+    "伤门死门": { name: "伤加死", type: "大凶", desc: "主官司印信大凶，有牢狱刑罚之灾。" },
+    "伤门惊门": { name: "伤加惊", type: "凶", desc: "主损财，因他人牵连而受惊吓。" },
+    "伤门开门": { name: "伤加开", type: "平", desc: "主见贵人、开张尚可，但防走失。" },
+
+    "杜门休门": { name: "杜加休", type: "吉", desc: "主求财有益，利于休养生息。" },
+    "杜门生门": { name: "杜加生", type: "凶", desc: "主男子小口破财，有小耗。" },
+    "杜门伤门": { name: "杜加伤", type: "凶", desc: "主兄弟相打，骨肉不和，破财。" },
+    "杜门杜门": { name: "杜加杜", type: "凶", desc: "主因父母疾病，田宅出脱事凶。" },
+    "杜门景门": { name: "杜加景", type: "凶", desc: "主文书印信阻隔，信息不通。" },
+    "杜门死门": { name: "杜加死", type: "凶", desc: "主文书失落，官司破财。" },
+    "杜门惊门": { name: "杜加惊", type: "凶", desc: "主门户内发生惊恐，词讼大凶。" },
+    "杜门开门": { name: "杜加开", type: "吉", desc: "主客交接，远行避灾则吉。" },
+
+    "景门休门": { name: "景加休", type: "凶", desc: "主文书遗失，计划受阻。" },
+    "景门生门": { name: "景加生", type: "大吉", desc: "主生男之喜，求财大吉，名利双收。" },
+    "景门伤门": { name: "景加伤", type: "凶", desc: "主长房少子多有阻滞，亲人不利。" },
+    "景门杜门": { name: "景加杜", type: "凶", desc: "主失物难寻，文书受阻。" },
+    "景门景门": { name: "景加景", type: "平", desc: "主文书印信多有不平，文案反复。" },
+    "景门死门": { name: "景加死", type: "凶", desc: "主官司因田宅而起，多有不利。" },
+    "景门惊门": { name: "景加惊", type: "凶", desc: "主词讼不断，多有惊恐不安。" },
+    "景门开门": { name: "景加开", type: "吉", desc: "主官人升迁大吉，常人求谋有利。" },
+
+    "死门休门": { name: "死加休", type: "凶", desc: "主求财不利，水神为患。" },
+    "死门生门": { name: "死加生", type: "吉", desc: "主逢丧事，但求财却能得利。" },
+    "死门伤门": { name: "死加伤", type: "大凶", desc: "主被刑杖，受罚，大凶。" },
+    "死门杜门": { name: "死加杜", type: "凶", desc: "主破财，万事皆不利。" },
+    "死门景门": { name: "死加景", type: "凶", desc: "主因文书、印信或财产引起官非。" },
+    "死门死门": { name: "死加死", type: "大凶", desc: "主官司、大凶、多有伤亡惊恐之事。" },
+    "死门惊门": { name: "死加惊", type: "凶", desc: "主因官司而产生极度惊恐。" },
+    "死门开门": { name: "死加开", type: "吉", desc: "主见贵人求财，反能大吉。" },
+
+    "惊门休门": { name: "惊加休", type: "凶", desc: "主求财破败，易惹口舌之非。" },
+    "惊门生门": { name: "惊加生", type: "凶", desc: "主因妇人引起惊恐、生疑。" },
+    "惊门伤门": { name: "惊加伤", type: "凶", desc: "主因惊恐而多破财。" },
+    "惊门杜门": { name: "惊加杜", type: "凶", desc: "主因失物而惊恐。" },
+    "惊门景门": { name: "惊加景", type: "凶", desc: "主词讼不息，惊疑不定。" },
+    "惊门死门": { name: "惊加死", type: "大凶", desc: "主因病惊恐，甚至有丧事。" },
+    "惊门惊门": { name: "惊加惊", type: "大凶", desc: "主疾病、惊疑，内忧外患皆有凶。" },
+    "惊门开门": { name: "惊加开", type: "平", desc: "主忧疑官司，多有惊恐之事。" },
+
+    "开门休门": { name: "开加休", type: "吉", desc: "主见贵人，利于求谋、求财。" },
+    "开门生门": { name: "开加生", type: "大吉", desc: "主见贵人，求财大吉，创业顺利。" },
+    "开门伤门": { name: "开门伤", type: "凶", desc: "主变动、失物，谋事多有阻隔。" },
+    "开门杜门": { name: "开加杜", type: "凶", desc: "主失物难寻，有逃避之事。" },
+    "开门景门": { name: "开加景", type: "平", desc: "主见贵人，但文书之事多有不利。" },
+    "开门死门": { name: "开加死", type: "凶", desc: "主官司惊忧，事业受阻。" },
+    "开门惊门": { name: "开加惊", type: "凶", desc: "主百事不利，大有惊恐。" },
+    "开门开门": { name: "开加开", type: "大吉", desc: "主见贵人，得宝物、财喜，大吉大利。" }
+  },
+
+  scan(chart) {
+    const globalPatterns = [];
+    const timeStem = chart.fourPillars.hour.stem;
+    const timeBranch = chart.fourPillars.hour.branch;
+
+    const dayStem = chart.fourPillars.day.stem;
+    if (this.isWuBuYuShi(dayStem, timeStem)) {
+        globalPatterns.push({ name: "五不遇时", type: "大凶", desc: "诸事不顺，极度凶险" });
+    }
+
+    chart.palaces.forEach(p => {
+      if (p.position === 5) return; 
+      
+      p.patterns = []; 
+      let hStem = Array.isArray(p.heavenlyStem) ? p.heavenlyStem[0] : p.heavenlyStem;
+      let eStem = Array.isArray(p.earthlyStem) ? p.earthlyStem[0] : p.earthlyStem;
+
+      if (hStem && eStem) {
+        let key = hStem + eStem;
+        if (this.StemPatterns[key]) {
+          p.patterns.push(this.StemPatterns[key]);
+        }
+      }
+
+      if (p.gate) {
+        let targetPos = QimenUtil.resolveJiGong(p.position);
+        let eGate = QimenConst.GATES[targetPos]; 
+        let hGate = p.gate;
+
+        if (eGate && hGate) {
+            let gateKey = hGate + eGate;
+            if (this.GatePatterns[gateKey]) {
+                p.patterns.push(this.GatePatterns[gateKey]);
+            }
+        }
+      }
+
+      const isJiMen = ["开门", "休门", "生门"].includes(p.gate);
+      if (hStem === "丙" && isJiMen && eStem === "丁") {
+        p.patterns.push({ name: "天遁", type: "大吉", desc: "宜祈祷求神，利战谋划。" });
+      }
+      if (hStem === "乙" && isJiMen && eStem === "己") {
+        p.patterns.push({ name: "地遁", type: "大吉", desc: "宜安营扎寨，埋伏藏兵。" });
+      }
+
+      if (chart.zhiShi && chart.zhiShi.position === p.position) {
+          if (hStem === "丁" || eStem === "丁") {
+              p.patterns.push({ name: "玉女守门", type: "吉", desc: "利私下谋划、男女约会、宴请。" });
+          }
+      }
+    });
+
+    chart.globalPatterns = globalPatterns;
+    return chart;
+  },
+
+  isWuBuYuShi(dayStem, hourStem) {
+    const rules = { "甲": "庚", "乙": "辛", "丙": "壬", "丁": "癸", "戊": "甲", "己": "乙", "庚": "丙", "辛": "丁", "壬": "戊", "癸": "己" };
+    return rules[dayStem] === hourStem;
+  }
+};
+
+// ============================================================
+// 八、传统转盘模块
+// ============================================================
+const OogoDiPan = {
+  build(juNumber, isYang) {
+    const result = {};
+    const stems = QimenConst.QIMEN_STEMS;
+    let palace = juNumber;
+    const direction = isYang ? 1 : -1;
+    for (let i = 0; i < 9; i++) {
+      result[palace] = stems[i];
+      palace = QimenUtil.numberMove(palace, 1, direction);
+    }
+    return result;
+  }
+};
+
+const OogoZhuanXing = {
+  getStarAtOriginalPalace(palace) { return palace === 5 ? "天禽" : QimenConst.STARS[palace]; },
+  build(earthStems, timeStem, xunStem, origXunPalace, isYang) {
+    const result = {};
+    const effectiveTimeStem = timeStem === "甲" ? xunStem : timeStem;
+    let timeStemPalace = null;
+    for (const p of QimenConst.PALACES) {
+      if (earthStems[p] === effectiveTimeStem) { timeStemPalace = p; break; }
+    }
+    if (!timeStemPalace) throw new Error(`找不到时干地盘宫：${effectiveTimeStem}`);
+    const zhiFuStar = this.getStarAtOriginalPalace(origXunPalace === 5 ? 5 : origXunPalace);
+    const ring = QimenConst.BAGUA_RING;
+    const effectiveXun = QimenUtil.resolveJiGong(origXunPalace);
+    const effectiveTime = QimenUtil.resolveJiGong(timeStemPalace);
+    const xunRingIndex = ring.indexOf(effectiveXun);
+    const targetRingIndex = ring.indexOf(effectiveTime);
+    const shift = QimenUtil.mod(targetRingIndex - xunRingIndex, 8);
+    for (let i = 0; i < 8; i++) {
+      const sourcePalace = ring[QimenUtil.mod(xunRingIndex + i, 8)];
+      const targetPalace = ring[QimenUtil.mod(xunRingIndex + i + shift, 8)];
+      result[targetPalace] = QimenConst.STARS[sourcePalace];
+    }
+    let tianRuiPalace = null;
+    for (const p of QimenConst.PALACES) {
+      if (result[p] === "天芮") { tianRuiPalace = p; break; }
+    }
+    if (tianRuiPalace) result[tianRuiPalace] = "天芮/天禽";
+    return { stars: result, zhiFuStar: zhiFuStar === "天禽" ? "天芮/天禽" : zhiFuStar, zhiFuPalace: effectiveTime };
+  }
+};
+
+const OogoZhuanMen = {
+  getOriginalGate(palace) { return QimenConst.GATES[palace] || ""; },
+  build(origXunPalace, xunBranch, timeBranch, isYang) {
+    const result = {};
+    const ring = QimenConst.BAGUA_RING;
+    const effectiveXun = QimenUtil.resolveJiGong(origXunPalace);
+    const zhiShiGate = this.getOriginalGate(effectiveXun);
+    const xunIdx = QimenUtil.branchIndex(xunBranch);
+    const timeIdx = QimenUtil.branchIndex(timeBranch);
+    const steps = QimenUtil.mod(timeIdx - xunIdx, 12);
+    const direction = isYang ? 1 : -1;
+    let targetPalace = QimenUtil.numberMove(origXunPalace, steps, direction); 
+    targetPalace = QimenUtil.resolveJiGong(targetPalace);
+    const targetRingIdx = ring.indexOf(targetPalace);
+    const gateStartIdx = QimenConst.GATE_ORDER.indexOf(zhiShiGate);
+    for (let i = 0; i < 8; i++) {
+      const gate = QimenConst.GATE_ORDER[QimenUtil.mod(gateStartIdx + i, 8)];
+      const palace = ring[QimenUtil.mod(targetRingIdx + i, 8)];
+      result[palace] = gate;
+    }
+    return { gates: result, zhiShiGate, zhiShiPalace: targetPalace, branchOffset: steps };
+  }
+};
+
+const OogoTianShen = {
+  build(zhiFuPalace, isYang) {
+    const result = {};
+    const ring = QimenConst.BAGUA_RING;
+    const deities = isYang ? QimenConst.DEITY_ORDER_YANG : QimenConst.DEITY_ORDER_YIN;
+    const start = ring.indexOf(QimenUtil.resolveJiGong(zhiFuPalace));
+    const direction = isYang ? 1 : -1;
+    for (let i = 0; i < 8; i++) {
+      const palace = ring[QimenUtil.mod(start + direction * i, 8)];
+      result[palace] = deities[i];
+    }
+    return result;
+  }
+};
+
+const OogoDiShen = {
+  build(earthXunPalace, isYang) {
+    const result = {};
+    const ring = QimenConst.BAGUA_RING;
+    const deities = isYang ? QimenConst.DEITY_ORDER_YANG : QimenConst.DEITY_ORDER_YIN;
+    const start = ring.indexOf(QimenUtil.resolveJiGong(earthXunPalace));
+    const direction = isYang ? 1 : -1;
+    for (let i = 0; i < 8; i++) {
+      const palace = ring[QimenUtil.mod(start + direction * i, 8)];
+      result[palace] = deities[i];
+    }
+    return result;
+  }
+};
+
+const OogoZhuanPan = {
+  calculate(year, month, day, hour, min, sec = 0, method = "zhirun", jigong = "ji2") {
+    let juInfo;
+    if (method === "chaibu") juInfo = OogoChaiBu.calculate(year, month, day, hour, min, sec);
+    else if (method === "maoshan") juInfo = OogoMaoShan.calculate(year, month, day, hour, min, sec);
+    else juInfo = OogoZhiRun.calculate(year, month, day, hour, min, sec);
+
+    const chart = juInfo.chart;
+    const juNumber = juInfo.juNumber;
+    const isYang = juInfo.isYangdun;
+    const originalResolveJiGong = QimenUtil.resolveJiGong;
+    const targetJiGong = (isYang && jigong === "y8y2") ? 8 : 2;
+    QimenUtil.resolveJiGong = function(palace) { return palace === 5 ? targetJiGong : palace; };
+
+    const timeStem = chart.fourPillars.hour.stem;
+    const timeBranch = chart.fourPillars.hour.branch;
+    const xun = QimenUtil.getXunInfo(timeStem, timeBranch);
+    const earthStems = OogoDiPan.build(juNumber, isYang);
+
+    let origXunPalace = null;
+    for (const p of QimenConst.PALACES) {
+      if (earthStems[p] === xun.stem) { origXunPalace = p; break; }
+    }
+    if (!origXunPalace) throw new Error(`找不到旬首地盘宫：${xun.stem}`);
+
+    const starInfo = OogoZhuanXing.build(earthStems, timeStem, xun.stem, origXunPalace, isYang);
+    if (targetJiGong === 8) {
+      for (let p in starInfo.stars) {
+        if (starInfo.stars[p] === "天芮/天禽") starInfo.stars[p] = "天芮";
+        if (starInfo.stars[p] === "天任") starInfo.stars[p] = "天任/天禽";
+      }
+      if (starInfo.zhiFuStar === "天芮/天禽" || starInfo.zhiFuStar === "天芮") starInfo.zhiFuStar = "天任/天禽";
+    }
+    
+    const gateInfo = OogoZhuanMen.build(origXunPalace, xun.branch, timeBranch, isYang);
+    const heavenDeities = OogoTianShen.build(starInfo.zhiFuPalace, isYang);
+    const earthDeities = OogoDiShen.build(origXunPalace, isYang);
+
+    const hiddenStemsMap = new Map();
+    const qimenStems = ["戊", "己", "庚", "辛", "壬", "癸", "丁", "丙", "乙"];
+    const hiddenTimeStem = timeStem === "甲" ? xun.stem : timeStem;
+    const tsIdx = qimenStems.indexOf(hiddenTimeStem);
+
+    if (tsIdx !== -1) {
+      let zsTargetPalace = gateInfo.zhiShiPalace;
+      for (let i = 0; i < 9; i++) {
+        let landPalace = isYang ? (zsTargetPalace + i) : (zsTargetPalace - i);
+        while (landPalace > 9) landPalace -= 9;
+        while (landPalace < 1) landPalace += 9;
+        hiddenStemsMap.set(landPalace, qimenStems[(tsIdx + i) % 9]);
+      }
+    }
+    chart.hiddenStems = hiddenStemsMap;
+
+    const palaces = [];
+    for (const position of QimenConst.PALACES) {
+      palaces.push({
+        position, earthStem: earthStems[position] || "", heavenlyStem: "",
+        earthlyStem: earthStems[position] || "", star: starInfo.stars[position] || "",
+        gate: gateInfo.gates[position] || "", deity: heavenDeities[position] || "",
+        earthDeity: earthDeities[position] || "", hiddenStem: hiddenStemsMap.get(position) || "无", 
+        isJiGong: position === 5
       });
-
-      // 如果选的是空白（无），直接结束
-      if (!currentYsVal) return;
-
-      // 2. 根据选项定义对应的用神关键字
-      let targets = [];
-      switch (currentYsVal) {
-        case '1': targets = ['戊', '生']; break;          // 求财
-        case '2': targets = ['戊', '生', '死', '符', '地', '辛']; break;          // 风水
-        case '3': targets = ['开', '符']; break;                // 事业
-        case '4': targets = ['丁', '辅', '景', '符']; break;          // 学业
-        case '5': targets = ['乙', '庚', '六', '丙', '丁']; break;    // 婚姻
-        case '6': targets = ['乙', '芮', '心']; break;          // 身体
-      }
-
-      // 3. 遍历所有的宫格，寻找匹配的字并高亮
-      const cells = document.querySelectorAll('.cell');
-      cells.forEach(cell => {
-        // 只检查星、门、神、天干、地支的元素
-        const elements = cell.querySelectorAll('.gate-text, .star-text, .deity-text, .stem-h, .stem-e');
-        elements.forEach(el => {
-          if (targets.some(t => el.innerText.includes(t))) {
-            el.classList.add('highlight-ys');
-          }
-        });
-      });
     }
 
-    function pad(n) { return n < 10 ? '0' + n : n; }
-
-    function initDateSelects() {
-      try {
-          const y = document.getElementById('selY'); for(let i=1900; i<=2100; i++) y.add(new Option(i, i));
-          const m = document.getElementById('selM'); for(let i=1; i<=12; i++) m.add(new Option(pad(i), i)); 
-          const d = document.getElementById('selD'); for(let i=1; i<=31; i++) d.add(new Option(pad(i), i)); 
-          const h = document.getElementById('selH'); for(let i=0; i<=23; i++) h.add(new Option(pad(i), i)); 
-          const min = document.getElementById('selMin'); for(let i=0; i<=59; i++) min.add(new Option(pad(i), i)); 
-      } catch(e) {}
+    const ring = QimenConst.BAGUA_RING;
+    const effectiveTimeStem = timeStem === "甲" ? xun.stem : timeStem;
+    let timeStemPalace = null;
+    for (const p of QimenConst.PALACES) {
+      if (earthStems[p] === effectiveTimeStem) { timeStemPalace = p; break; }
     }
-    initDateSelects();
+    timeStemPalace = QimenUtil.resolveJiGong(timeStemPalace);
+    const effectiveXunPalace = QimenUtil.resolveJiGong(origXunPalace);
+    const xunRingIndex = ring.indexOf(effectiveXunPalace); 
+    const targetRingIndex = ring.indexOf(timeStemPalace);
+    const starShift = QimenUtil.mod(targetRingIndex - xunRingIndex, 8);
 
-    // ★ 修改点 3：增加控制格局切换和按钮变色的函数
-    function toggleGeJu() {
-      showGeJu = !showGeJu;
-      const zhenBadge = document.querySelector('.badge-zhen');
-      if (showGeJu) {
-        zhenBadge.style.background = 'var(--c-gate-r)';
-        zhenBadge.style.color = '#fff';
-      } else {
-        zhenBadge.style.background = 'rgba(91, 146, 214, 0.15)';
-        zhenBadge.style.color = 'var(--text-blue)';
-      }
-      
-      if (isChartGenerated) {
-        generateChart(); 
-      } else {
-        showToast(showGeJu ? '🔮 吉凶格局模式：已开启' : '🔮 吉凶格局模式：已关闭');
-      }
+    const heavenStems = {};
+    for (let i = 0; i < 8; i++) {
+      const sourcePalace = ring[QimenUtil.mod(xunRingIndex + i, 8)];
+      const targetPalace = ring[QimenUtil.mod(xunRingIndex + i + starShift, 8)];
+      heavenStems[targetPalace] = earthStems[sourcePalace];
     }
+    heavenStems[5] = heavenStems[targetJiGong];
 
-    function getEffectiveDate() {
-      let yIn = parseInt(document.getElementById('selY').value);
-      let mIn = parseInt(document.getElementById('selM').value);
-      let dIn = parseInt(document.getElementById('selD').value);
-      let hIn = parseInt(document.getElementById('selH').value);
-      let minIn = parseInt(document.getElementById('selMin').value);
-      let dDate = new Date(yIn, mIn - 1, dIn, hIn, minIn, 0);
-      let lng = parseFloat(document.getElementById('longitude').value);
-      if (document.getElementById('useTrueSolar').checked && !isNaN(lng)) { 
-        dDate.setMinutes(dDate.getMinutes() + (lng - 120) * 4); 
-      }
-      return dDate;
-    }
+    palaces.forEach(p => {
+      p.heavenlyStem = heavenStems[p.position] || "";
+      if (p.position === targetJiGong) { p.earthlyStem = [p.earthlyStem, earthStems[5]]; }
+      if (p.star && p.star.includes("天禽")) { p.heavenlyStem = [p.heavenlyStem, earthStems[5]]; }
+    });
 
-    function getWuxingColor(char) {
-      if (['甲', '乙', '寅', '卯'].includes(char)) return 'var(--wx-wood)';   
-      if (['丙', '丁', '巳', '午'].includes(char)) return 'var(--wx-fire)';   
-      if (['戊', '己', '辰', '戌', '丑', '未'].includes(char)) return 'var(--wx-earth)'; 
-      if (['庚', '辛', '申', '酉'].includes(char)) return 'var(--wx-metal)'; 
-      if (['壬', '癸', '亥', '子'].includes(char)) return 'var(--wx-water)'; 
-      return 'inherit';
-    }
+    const result = {
+      method: juInfo.method, ju: { number: juNumber, type: isYang ? "阳遁" : "阴遁" },
+      chart, fourPillars: chart.fourPillars, solarTerm: { name: juInfo.termName, date: juInfo.termDate },
+      fuTou: { date: juInfo.fuTouDate, ganZhi: juInfo.fuTouGanZhi, yuan: juInfo.yuanName },
+      zhiFu: { star: starInfo.zhiFuStar, position: starInfo.zhiFuPalace },
+      zhiShi: { gate: gateInfo.zhiShiGate, position: gateInfo.zhiShiPalace },
+      xun: { name: xun.name, stem: xun.stem, branch: xun.branch, palace: origXunPalace },
+      hiddenStems: hiddenStemsMap, palaces, debugInfo: juInfo.debugInfo
+    };
 
-    function formatPillar(pillarStr) {
-      if (!pillarStr) return '';
-      let stem = pillarStr[0] || '';
-      let branch = pillarStr[1] || '';
-      return `<span style="color: ${getWuxingColor(stem)}">${stem}</span><span style="color: ${getWuxingColor(branch)}">${branch}</span>`;
-    }
-
-    let taijiAngle = 0, isTaijiDragging = false, taijiOffsetAngle = 0, taijiReqFrame = null, bigTaijiElem = null, taijiWrapper = null;
-
-    function initBigTaiji() {
-        bigTaijiElem = document.getElementById('bigTaiji'); taijiWrapper = document.getElementById('taijiWrapper');
-        if (!bigTaijiElem || !taijiWrapper) return;
-        if(taijiReqFrame) cancelAnimationFrame(taijiReqFrame);
-        isTaijiDragging = false;
-        animateBigTaiji(); 
-        taijiWrapper.addEventListener('pointerdown', startDrag); document.addEventListener('pointermove', doDrag, { passive: false }); document.addEventListener('pointerup', endDrag); document.addEventListener('pointercancel', endDrag);
-    }
-    function stopBigTaiji() {
-        if(taijiReqFrame) { cancelAnimationFrame(taijiReqFrame); taijiReqFrame = null; }
-        if(taijiWrapper) taijiWrapper.removeEventListener('pointerdown', startDrag);
-        document.removeEventListener('pointermove', doDrag); document.removeEventListener('pointerup', endDrag); document.removeEventListener('pointercancel', endDrag);
-        bigTaijiElem = null; taijiWrapper = null;
-    }
-    function animateBigTaiji() {
-        if (!isTaijiDragging && bigTaijiElem) { taijiAngle += 0.8; if (taijiAngle >= 360) taijiAngle -= 360; bigTaijiElem.style.transform = `rotate(${taijiAngle}deg)`; }
-        if (bigTaijiElem) taijiReqFrame = requestAnimationFrame(animateBigTaiji);
-    }
-    function getAngle(x, y) {
-        if(!bigTaijiElem) return 0;
-        let rect = bigTaijiElem.getBoundingClientRect();
-        let cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2;
-        return Math.atan2(y - cy, x - cx) * 180 / Math.PI;
-    }
-    function startDrag(e) { isTaijiDragging = true; let angle = getAngle(e.clientX, e.clientY); taijiOffsetAngle = taijiAngle - angle; taijiWrapper.style.cursor = 'grabbing'; }
-    function doDrag(e) { if (!isTaijiDragging || !bigTaijiElem) return; if (e.cancelable) e.preventDefault(); let angle = getAngle(e.clientX, e.clientY); taijiAngle = angle + taijiOffsetAngle; bigTaijiElem.style.transform = `rotate(${taijiAngle}deg)`; }
-    function endDrag(e) { isTaijiDragging = false; if(taijiWrapper) taijiWrapper.style.cursor = 'grab'; }
-
-    function renderDefaultBoard() {
-      if (typeof stopBigTaiji === 'function') stopBigTaiji();
-      const grid = document.getElementById('chartGrid');
-      grid.style.background = 'transparent'; grid.style.border = 'none'; grid.style.display = 'flex'; grid.style.justifyContent = 'center'; grid.style.alignItems = 'center'; grid.style.padding = '10px';
-      grid.innerHTML = `<div id="taijiWrapper" style="width: 100%; max-width: 420px; aspect-ratio: 1/1; display: flex; justify-content: center; align-items: center; cursor: grab; touch-action: none; -webkit-tap-highlight-color: transparent;"><svg id="bigTaiji" viewBox="0 0 200 200" style="width: 100%; height: 100%; filter: drop-shadow(0 8px 24px rgba(0,0,0,0.35));"><path d="M 100 0 A 100 100 0 0 1 100 200 C 33.33 200, 33.33 100, 100 100 C 166.67 100, 166.67 0, 100 0 Z" fill="#000000"/><path d="M 100 200 A 100 100 0 0 1 100 0 C 166.67 0, 166.67 100, 100 100 C 33.33 100, 33.33 200, 100 200 Z" fill="#ffffff"/><circle cx="100" cy="50" r="27.5" fill="#000000"/><circle cx="100" cy="150" r="24.5" fill="#ffffff"/></svg></div>`;
-      document.getElementById('infoBoard').innerHTML = '<div class="info-row" style="justify-content: center; color: var(--text-gold); font-size: 15px; font-weight: bold; margin-bottom: 8px;"><span>👑 OOGO奇门遁甲 👑</span></div><div class="info-row" style="justify-content: center; margin-bottom: 5px;"><span>太极生两仪，两仪生四象，四象生八卦</span></div><div class="info-row" style="justify-content: center; margin-top: 15px;"><span style="color: var(--text-blue); font-weight: bold;">  请设定时间与参数后，点击右上角【起局】👆 </span></div>';
-      setTimeout(() => { if (typeof initBigTaiji === 'function') initBigTaiji(); }, 50);
-    }
-    
-    renderDefaultBoard(); 
-
-    function setNowTime() {
-      const now = new Date();
-      document.getElementById('selY').value = now.getFullYear();
-      document.getElementById('selM').value = now.getMonth() + 1;
-      document.getElementById('selD').value = now.getDate();
-      document.getElementById('selH').value = now.getHours();
-      document.getElementById('selMin').value = now.getMinutes();
-      updateDynamicInfo(); 
-    }
-
-    function initTheme() {
-      const savedTheme = localStorage.getItem('oogo_theme');
-      if (savedTheme === 'light') document.body.classList.add('light-theme');
-      else document.body.classList.remove('light-theme');
-    }
-    initTheme();
-
-    function saveSettings() {
-      localStorage.setItem('oogo_method', document.getElementById('methodSelect').value);
-      localStorage.setItem('oogo_pan', document.getElementById('panSelect').value);
-      localStorage.setItem('oogo_jigong', document.getElementById('jigongSelect').value);
-    }
-
-    function updatePanMenu() {
-      const panSelect = document.getElementById('panSelect');
-      const subSelect = document.getElementById('jigongSelect');
-      const currentVal = subSelect.value;
-      subSelect.innerHTML = '';
-      if (panSelect.value === 'zhuan') {
-        subSelect.add(new Option('寄2宫', 'ji2')); subSelect.add(new Option('阳8阴2', 'y8y2'));
-        if (currentVal === 'ji2' || currentVal === 'y8y2') subSelect.value = currentVal; else subSelect.value = 'ji2';
-      } else {
-        subSelect.add(new Option('传统', 'chuantong')); subSelect.add(new Option('鸣法', 'mingfa'));
-        if (currentVal === 'chuantong' || currentVal === 'mingfa') subSelect.value = currentVal; else subSelect.value = 'chuantong';
-      }
-    }
-
-    function initSettings() {
-      const savedMethod = localStorage.getItem('oogo_method'), savedPan = localStorage.getItem('oogo_pan'), savedJigong = localStorage.getItem('oogo_jigong');
-      if (savedMethod) document.getElementById('methodSelect').value = savedMethod;
-      if (savedPan) document.getElementById('panSelect').value = savedPan;
-      updatePanMenu(); 
-      if (savedJigong) document.getElementById('jigongSelect').value = savedJigong;
-    }
-    
-    initSettings();
-
-    function toggleTheme() { 
-      document.body.classList.toggle('light-theme');
-      if (document.body.classList.contains('light-theme')) localStorage.setItem('oogo_theme', 'light');
-      else localStorage.setItem('oogo_theme', 'dark');
-    }
-
-    let checkEngine = setInterval(function() {
-      if (typeof OogoCalendar !== 'undefined' && typeof OogoQimen !== 'undefined') { clearInterval(checkEngine); setNowTime(); }
-    }, 200);
-
-    function updateDynamicInfo() {
-      if (typeof OogoCalendar === 'undefined') return;
-      try {
-        let dDate = getEffectiveDate();
-        let solar = OogoCalendar.Solar.fromYmdHms(dDate.getFullYear(), dDate.getMonth() + 1, dDate.getDate(), dDate.getHours(), dDate.getMinutes(), 0);
-        let lunar = OogoCalendar.Lunar.fromSolar(solar);
-        let currentJQInfo = lunar.getPrevJieQi(), currentJQName = currentJQInfo.getName(), startSolar = currentJQInfo.getSolar();
-        let nextD = new Date(dDate.getTime() + 16 * 24 * 3600 * 1000);
-        let nextSolarObj = OogoCalendar.Solar.fromYmdHms(nextD.getFullYear(), nextD.getMonth() + 1, nextD.getDate(), nextD.getHours(), nextD.getMinutes(), 0);
-        let nextLunar = OogoCalendar.Lunar.fromSolar(nextSolarObj);
-        let nextJQInfo = nextLunar.getPrevJieQi();
-        function formatS(s) { return s.getYear() + '.' + pad(s.getMonth()) + '.' + pad(s.getDay()) + ' ' + pad(s.getHour()) + ':' + pad(s.getMinute()); }
-        document.getElementById('jieqiRange').innerHTML = currentJQName + ' ' + formatS(startSolar) + '<span style="color:var(--text-gray); margin:0 3px;">~</span>' + nextJQInfo.getName() + ' ' + formatS(nextJQInfo.getSolar());
-      } catch (e) { console.error("更新节气栏出错: ", e); }
-    }
-
-    const stems = ["甲","乙","丙","丁","戊","己","庚","辛","壬","癸"];
-    const branches = ["子","丑","寅","卯","辰","巳","午","未","申","酉","戌","亥"];
-
-    function simplifyDeity(name) {
-      if (!name) return '';
-      return name.replace('值符','符').replace('腾蛇','螣').replace('太阴','阴').replace('六合','合').replace('白虎','白').replace('玄武','玄').replace('九地','地').replace('九天','天').replace('勾陈','勾').replace('太常','常').replace('朱雀','雀');
-    }
-
-    function generateChart() {
-      try {
-        if (typeof stopBigTaiji === 'function') stopBigTaiji();
-        isChartGenerated = true; 
-
-        const grid = document.getElementById('chartGrid');
-        grid.style.background = 'var(--gold-line)'; grid.style.border = '1px solid var(--gold-line)'; grid.style.display = 'grid'; grid.style.justifyContent = ''; grid.style.alignItems = ''; grid.style.padding = '1px';
-        
-        let dDate = getEffectiveDate();
-        const y = dDate.getFullYear(), m = dDate.getMonth() + 1, d = dDate.getDate(), h = dDate.getHours(), min = dDate.getMinutes();
-        let method = document.getElementById('methodSelect').value, panType = document.getElementById('panSelect').value, jigong = document.getElementById('jigongSelect').value;
-        
-        let chart, isRun = false, superShenDays = 0, juInfo;
-        
-        if (method === 'zhirun') { juInfo = OogoZhiRun.calculate(y, m, d, h, min, 0); isRun = juInfo.isTrueRun; superShenDays = juInfo.superShenDays || 0; }
-        else if (method === 'maoshan') { juInfo = OogoMaoShan.calculate(y, m, d, h, min, 0); }
-        else { juInfo = OogoChaiBu.calculate(y, m, d, h, min, 0); }
-
-        if (panType === 'fei') { 
-            chart = juInfo.chart;
-            chart.ju = { number: juInfo.juNumber, type: juInfo.isYangdun ? "阳遁" : "阴遁" };
-            chart.yuan = juInfo.yuanName || "中元"; chart.solarTerm = juInfo.termName;
-            let isMingFa = (jigong === 'mingfa'); 
-            chart = OogoFeiPan.fly(chart, isMingFa); 
-        } else { 
-            let zhuanResult = OogoZhuanPan.calculate(y, m, d, h, min, 0, method, jigong);
-            chart = zhuanResult.chart; chart.palaces = zhuanResult.palaces; chart.fourPillars = zhuanResult.fourPillars; chart.ju = zhuanResult.ju;
-            chart.yuan = zhuanResult.fuTou.yuan; chart.solarTerm = zhuanResult.solarTerm.name; chart.zhiFu = zhuanResult.zhiFu;
-            chart.zhiShi = zhuanResult.zhiShi; chart.xun = zhuanResult.xun; chart.timeInfo = { voidness: zhuanResult.kongWang ? zhuanResult.kongWang.branches : [] };
-            chart.postHorse = zhuanResult.yiMa; chart.uiTagFuYin = zhuanResult.uiTagFuYinFanYin ? zhuanResult.uiTagFuYinFanYin.text : '';
-            let xunDun = {"甲子":"戊", "甲戌":"己", "甲申":"庚", "甲午":"辛", "甲辰":"壬", "甲寅":"癸"}[chart.xun.name || "甲子"];
-            let isYang = chart.ju.type.indexOf('阳') !== -1;
-            chart = OogoZhuanPanEnhancer.enhance(chart, xunDun, isYang);
-        }
-
-        let bY = chart.fourPillars.year.stem + chart.fourPillars.year.branch, bM = chart.fourPillars.month.stem + chart.fourPillars.month.branch;
-        let bD = chart.fourPillars.day.stem + chart.fourPillars.day.branch, bH = chart.fourPillars.hour.stem + chart.fourPillars.hour.branch;
-
-        let dSIdx = stems.indexOf(chart.fourPillars.day.stem), dBIdx = branches.indexOf(chart.fourPillars.day.branch);
-        let fuOffset = dSIdx >= 0 ? dSIdx % 5 : 0;
-        let fuTou = stems[dSIdx - fuOffset] + branches[(dBIdx - fuOffset + 12) % 12];
-        let yuanDay = fuOffset + 1; 
-
-        let maXing = chart.postHorse ? chart.postHorse.branch : '', voidnessArr = (chart.timeInfo && chart.timeInfo.voidness) ? chart.timeInfo.voidness : [];
-        let kong1 = voidnessArr[0] || '', kong2 = voidnessArr[1] || '';
-
-        let zfPalace = chart.zhiFu.position, zsPalace = chart.zhiShi.position;
-        let zfPalaceObj = chart.palaces.find(p => p.position === zfPalace) || {}, zsPalaceObj = chart.palaces.find(p => p.position === zsPalace) || {};
-        let displayZfName = (Array.isArray(zfPalaceObj.star) ? zfPalaceObj.star[0] : (zfPalaceObj.star || '')).replace(/天|星/g, '');
-        let zsName = (zsPalaceObj.gate || '').replace('门', '');
-
-        let jqName = chart.solarTerm || (chart.timeInfo && chart.timeInfo.solarTerm) || "未知";
-        let runTag = isRun ? '<span style="color:var(--c-gate-r); font-weight:bold; margin-left:2px;">(闰)</span>' : '';
-        let superShenTip = (method === 'zhirun' && superShenDays > 0) ? `<span style="color:var(--text-gold); font-weight:bold; margin-left:2px;">(超神${superShenDays}天)</span>` : '';
-        
-        let yuanStr = (chart.yuan || '中元') + '第' + yuanDay + '天', dunStr = (chart.ju.type || '') + (chart.ju.number || '') + '局';
-        let xunName = chart.xun ? chart.xun.name : "", xunDun = chart.xun ? chart.xun.stem : "";
-
-        let fyText = chart.uiTagFuYin || '';
-        if (fyText) fyText = '<span style="color:#d34e55; font-weight:bold; margin-left:8px; border:1px solid #d34e55; padding:1px 4px; border-radius:4px; font-size:13px;">' + fyText + '</span>';
-
-        let boardHtml =
-          '<div class="bazi-row">' +
-            '<div class="bazi-box"><div class="bazi-title">年柱</div><div class="bazi-value">' + formatPillar(bY) + '</div></div>' +
-            '<div class="bazi-box"><div class="bazi-title">月柱</div><div class="bazi-value">' + formatPillar(bM) + '</div></div>' +
-            '<div class="bazi-box"><div class="bazi-title">日柱</div><div class="bazi-value">' + formatPillar(bD) + '</div></div>' +
-            '<div class="bazi-box"><div class="bazi-title">时柱</div><div class="bazi-value">' + formatPillar(bH) + '</div></div>' +
-          '</div>' +
-          '<div class="info-row"><span style="display:flex; align-items:center;">' + jqName + superShenTip + runTag + ' &nbsp;' + yuanStr + ' &nbsp;' + dunStr + '</span><span>符头: ' + fuTou + '</span></div>' +
-          '<div class="info-row zhifu-row"><span class="pill-green">值符: ' + displayZfName + '(' + zfPalace + '宫)</span><div class="circle-logo" onclick="exportImage()">历</div>' +
-          '<div style="position: relative; display: inline-block;">' +
-            '<span class="pill-green">值使: ' + zsName + '(' + zsPalace + '宫)</span>' +
-            '<select id="ysSelect" onchange="changeYS(this.value)" style="position:absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:pointer; -webkit-appearance:none;">' +
-              '<option value="">(点击选择求测事项)</option>' +
-              '<option value="1" ' + (currentYsVal==='1'?'selected':'') + '>1. 求财（财运、投资、生意）</option>' +
-              '<option value="2" ' + (currentYsVal==='2'?'selected':'') + '>2. 风水（环境、阳宅、阴宅）</option>' +
-              '<option value="3" ' + (currentYsVal==='3'?'selected':'') + '>3. 事业（工作、升职、求职）</option>' +
-              '<option value="4" ' + (currentYsVal==='4'?'selected':'') + '>4. 学业（考试、考研、成绩）</option>' +
-              '<option value="5" ' + (currentYsVal==='5'?'selected':'') + '>5. 婚姻（恋爱、相亲、感情）</option>' +
-              '<option value="6" ' + (currentYsVal==='6'?'selected':'') + '>6. 身体（健康、疾病、看病）</option>' +
-            '</select>' +
-          '</div>' +
-          '</div>' +
-          '<div class="info-row"><span style="display:flex; align-items:center;">旬首: ' + xunName + '遁' + xunDun + fyText + '</span><span>马星: ' + maXing + ' &nbsp;空亡: ' + kong1 + ',' + kong2 + '</span></div>';
-        
-        document.getElementById('infoBoard').innerHTML = boardHtml;
-
-        let centerP = chart.palaces.find(x => x.position === 5) || {};
-        let cH = Array.isArray(centerP.heavenlyStem) ? centerP.heavenlyStem[0] : (centerP.heavenlyStem || '');
-        let cE = Array.isArray(centerP.earthlyStem) ? centerP.earthlyStem[0] : (centerP.earthlyStem || '');
-        let gridHtml = '';
-
-        const guaMap = { 1:'坎', 2:'坤', 3:'震', 4:'巽', 5:'中', 6:'乾', 7:'兑', 8:'艮', 9:'离' };
-
-        const displayOrder = [4, 9, 2, 3, 5, 7, 8, 1, 6];
-        displayOrder.forEach(function(pos) {
-          const p = chart.palaces.find(x => x.position === pos) || {};
-          let tDeity = simplifyDeity(Array.isArray(p.deity) ? p.deity[0] : (p.deity || ''));
-          let eDeity = (panType === 'zhuan') ? simplifyDeity(p.earthDeity || '') : ''; 
-          let starName = (Array.isArray(p.star) ? p.star.join('/') : (p.star || '')).replace(/天/g, '').replace(/星/g, '');
-          
-          let hiddenStem = "";
-          if (panType === 'fei') hiddenStem = p.hiddenStem || "";
-          else if (chart.hiddenStems && typeof chart.hiddenStems.get === 'function') hiddenStem = chart.hiddenStems.get(pos) || "";
-          else if (chart.hiddenStems) hiddenStem = chart.hiddenStems[pos] || "";
-          
-          let hStem = Array.isArray(p.heavenlyStem) ? p.heavenlyStem.join('/') : (p.heavenlyStem || '');
-          let eStem = Array.isArray(p.earthlyStem) ? p.earthlyStem.join('/') : (p.earthlyStem || '');
-          
-          let dayStem = chart.fourPillars.day.stem; let dColor = getWuxingColor(dayStem);
-          let showHStem = hStem.replace(new RegExp(dayStem, 'g'), `<span style="color:${dColor};">${dayStem}</span>`);
-          let showEStem = eStem; 
-// ====== ★ 新增：十二长生 UI 渲染注入点 ======
-if (showChangSheng && pos !== 5) {
-  // 直接从后端 OogoTagEnhancer 传过来的数据对象(p)里取值
-  let csH = p.heavenlyChangsheng; 
-  let csE = p.earthlyChangsheng;  
-  
-  if (csH) {
-    showHStem = `<span style="position:relative; display:inline-block;">${showHStem}<span style="position:absolute; bottom:-12px; right:0; font-size:10px; color:var(--text-gray); font-weight:normal; letter-spacing:-0.5px; transform:scale(0.85); transform-origin:right; white-space:nowrap; z-index:5;">${csH}</span></span>`;
+    QimenUtil.resolveJiGong = originalResolveJiGong;
+    let enhancedChart = OogoTagEnhancer.enhance(result);
+    return OogoGeJu.scan(enhancedChart);
   }
-  if (csE) {
-    showEStem = `<span style="position:relative; display:inline-block;">${showEStem}<span style="position:absolute; bottom:-12px; right:0; font-size:10px; color:var(--text-gray); font-weight:normal; letter-spacing:-0.5px; transform:scale(0.85); transform-origin:right; white-space:nowrap; z-index:5;">${csE}</span></span>`;
+};
+
+// ============================================================
+// 九、原生飞盘模块 (已加入 isMingFa 参数联动)
+// ============================================================
+const OogoFeiPan = {
+  fly(chart, isMingFa = false) {
+    const isYang = (chart.ju && chart.ju.type) ? chart.ju.type.indexOf("阳") !== -1 : true;
+    const juNumber = chart.ju.number;
+    const timeStem = chart.fourPillars.hour.stem;
+    const timeBranch = chart.fourPillars.hour.branch;
+    const stemsArr = ["甲", "乙", "丙", "丁", "戊", "己", "庚", "辛", "壬", "癸"];
+    const branchesArr = ["子", "丑", "寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥"];
+    const qimenStems = ["戊", "己", "庚", "辛", "壬", "癸", "丁", "丙", "乙"];
+
+    const hSIdx = stemsArr.indexOf(timeStem);
+    const hBIdx = branchesArr.indexOf(timeBranch);
+    const xunOffset = (hBIdx - hSIdx + 12) % 12;
+    const xunName = stemsArr[0] + branchesArr[xunOffset];
+    const xunStem = { "甲子": "戊", "甲戌": "己", "甲申": "庚", "甲午": "辛", "甲辰": "壬", "甲寅": "癸" }[xunName];
+
+    const pureEarthStems = {};
+    let palace = juNumber;
+    const direction = isYang ? 1 : -1;
+    for (let i = 0; i < 9; i++) {
+      pureEarthStems[palace] = qimenStems[i];
+      palace = QimenUtil.numberMove(palace, 1, direction);
+    }
+
+    const origStars = { 1: "天蓬", 2: "天芮", 3: "天冲", 4: "天辅", 5: "天禽", 6: "天心", 7: "天柱", 8: "天任", 9: "天英" };
+    const origGates = { 1: "休门", 2: "死门", 3: "伤门", 4: "杜门", 5: "中门", 6: "开门", 7: "惊门", 8: "生门", 9: "景门" };
+
+    let xunPalace = 5, zfTargetPalace = 5;
+    for (let i = 1; i <= 9; i++) {
+      if (pureEarthStems[i] === xunStem) xunPalace = i;
+      if (pureEarthStems[i] === (timeStem === "甲" ? xunStem : timeStem)) zfTargetPalace = i;
+    }
+
+    let starSteps = isYang ? (zfTargetPalace - xunPalace) : (xunPalace - zfTargetPalace);
+    if (starSteps < 0) starSteps += 9;
+
+    const flyStars = {};
+    const flyHeavenStems = {};
+    for (let i = 1; i <= 9; i++) {
+      let landPalace = isYang ? (i + starSteps) : (i - starSteps);
+      while (landPalace > 9) landPalace -= 9;
+      while (landPalace < 1) landPalace += 9;
+      flyStars[landPalace] = origStars[i];
+      flyHeavenStems[landPalace] = pureEarthStems[i];
+    }
+
+    const xunBranch = xunName[1];
+    let branchOffset = branchesArr.indexOf(timeBranch) - branchesArr.indexOf(xunBranch);
+    if (branchOffset < 0) branchOffset += 12;
+
+    let zsTargetPalace = isYang ? (xunPalace + branchOffset) : (xunPalace - branchOffset);
+    while (zsTargetPalace > 9) zsTargetPalace -= 9;
+    while (zsTargetPalace < 1) zsTargetPalace += 9;
+
+    let gateSteps = isYang ? (zsTargetPalace - xunPalace) : (xunPalace - zsTargetPalace);
+    if (gateSteps < 0) gateSteps += 9;
+
+    const flyGates = {};
+    for (let i = 1; i <= 9; i++) {
+      let landPalace = isYang ? (i + gateSteps) : (i - gateSteps);
+      while (landPalace > 9) landPalace -= 9;
+      while (landPalace < 1) landPalace += 9;
+      flyGates[landPalace] = origGates[i];
+    }
+
+    const deitiesYang = ["符", "螣", "阴", "六", "勾", "常", "朱", "地", "天"];
+    const deitiesYin  = ["符", "螣", "阴", "六", "白", "常", "玄", "地", "天"];
+    const deitiesList = isYang ? deitiesYang : deitiesYin;
+
+    // ★ 联动参数生效：传统随星，鸣法随门
+    const deityStartPalace = isMingFa ? zsTargetPalace : zfTargetPalace;
+
+    const flyDeities = {};
+    for (let i = 0; i < 9; i++) {
+      let landPalace = isYang ? (deityStartPalace + i) : (deityStartPalace - i);
+      while (landPalace > 9) landPalace -= 9;
+      while (landPalace < 1) landPalace += 9;
+      flyDeities[landPalace] = deitiesList[i];
+    }
+
+    const flyHiddenStems = {};
+    const tsIdx = qimenStems.indexOf(timeStem === "甲" ? xunStem : timeStem);
+    if (tsIdx !== -1) {
+      for (let i = 0; i < 9; i++) {
+        let landPalace = isYang ? (zsTargetPalace + i) : (zsTargetPalace - i);
+        while (landPalace > 9) landPalace -= 9;
+        while (landPalace < 1) landPalace += 9;
+        flyHiddenStems[landPalace] = qimenStems[(tsIdx + i) % 9];
+      }
+    }
+
+    chart.palaces.forEach(function (p) {
+      const pos = p.position;
+      const gate = flyGates[pos];
+      const hStem = flyHeavenStems[pos];
+
+      p.star = flyStars[pos]; p.gate = gate; p.deity = flyDeities[pos];
+      p.heavenlyStem = hStem; p.earthlyStem = pureEarthStems[pos];
+      p.hiddenStem = flyHiddenStems[pos] || "无";
+      delete p.isJiGong;
+
+      let jx = false;
+      if ((hStem === "戊" && pos === 3) || (hStem === "己" && pos === 2) || (hStem === "庚" && pos === 8) || (hStem === "辛" && pos === 9) || (hStem === "壬" && pos === 4) || (hStem === "癸" && pos === 4)) jx = true;
+      p.liuYiJiXing = { hasJiXing: jx };
+
+      const gateEle = { "休门": "水", "生门": "土", "伤门": "木", "杜门": "木", "景门": "火", "死门": "土", "惊门": "金", "开门": "金", "中门": "土" }[gate];
+      const palaceEle = { 1: "水", 2: "土", 3: "木", 4: "木", 5: "土", 6: "金", 7: "金", 8: "土", 9: "火" }[pos];
+      let po = false;
+      if ((gateEle === "水" && palaceEle === "火") || (gateEle === "火" && palaceEle === "金") || (gateEle === "金" && palaceEle === "木") || (gateEle === "木" && palaceEle === "土") || (gateEle === "土" && palaceEle === "水")) po = true;
+      p.gatePressure = { hasPressure: po, text: po ? "门迫" : "" };
+
+      let mu = false;
+      if ((pos === 6 && ["丙", "戊", "乙"].includes(hStem)) || (pos === 8 && ["丁", "己", "庚"].includes(hStem)) || (pos === 4 && ["辛", "壬"].includes(hStem)) || (pos === 2 && hStem === "癸")) mu = true;
+      p.tombInfo = { heavenlyStemInTomb: mu ? [hStem] : [], earthlyStemInTomb: [] };
+    });
+
+    if (!chart.zhiFu) chart.zhiFu = {};
+    if (!chart.zhiShi) chart.zhiShi = {};
+    chart.zhiFu.position = zfTargetPalace;
+    chart.zhiShi.position = zsTargetPalace;
+
+    let enhancedChart = OogoTagEnhancer.enhance(chart);
+    return OogoGeJu.scan(enhancedChart);
   }
+};
+
+// ============================================================
+// 十、统一入口与导出
+// ============================================================
+const OogoZhuanPanEnhancer = { enhance(chart, xunDun, isYang) { return chart; } };
+
+const OogoQimen = {
+  calculate(year, month, day, hour, min, sec = 0) { return OogoZhuanPan.calculate(year, month, day, hour, min, sec, "zhirun"); },
+  calculateChaiBu(year, month, day, hour, min, sec = 0) { return OogoZhuanPan.calculate(year, month, day, hour, min, sec, "chaibu"); },
+  calculateMaoShan(year, month, day, hour, min, sec = 0) { return OogoZhuanPan.calculate(year, month, day, hour, min, sec, "maoshan"); },
+  calculateZhiRun(year, month, day, hour, min, sec = 0) { return OogoZhiRun.calculate(year, month, day, hour, min, sec); }
+};
+
+if (typeof module !== "undefined" && module.exports) {
+  module.exports = {
+    QimenConst, QimenUtil, CalendarAdapter, QimenFuTou, QimenSolarTerm,
+    OogoZhiRun, OogoChaiBu, OogoMaoShan, OogoDiPan, OogoZhuanXing, OogoZhuanMen,
+    OogoTianShen, OogoDiShen, OogoKongWang, OogoYiMa, OogoFuFan,
+    OogoTagEnhancer, OogoGeJu, OogoZhuanPan, OogoZhuanPanEnhancer, OogoFeiPan, OogoQimen
+  };
 }
-// ============================================
 
-let origGate = p.gate || ''; let gateName = origGate.replace('门', '');
-
-          let origGate = p.gate || ''; let gateName = origGate.replace('门', '');
-          let gateClass = (origGate === '生门' || origGate === '休门' || origGate === '开门') ? 'gate-g' : ((origGate === '杜门' || origGate === '景门') ? 'gate-n' : 'gate-r');
-          if (origGate === '中门') gateClass = 'gate-g';
-
-          let tagsArr = [];
-          if (p.uiTagJx) tagsArr.push('<span class="tag-jx">刑</span>');
-          if (p.uiTagPo) tagsArr.push('<span class="tag-po">迫</span>');
-          if (p.uiTagMu) tagsArr.push('<span class="tag-mu">墓</span>');
-          if (p.uiTagMa) tagsArr.push('<span class="tag-ma">马</span>');
-          if (p.uiTagKong) tagsArr.push('<span class="tag-kong">空</span>');
-
-          let isCrowded = tagsArr.length >= 3; 
-          let tagsHtml = '';
-          if (tagsArr.length > 0) tagsHtml = `<div style="position:absolute; top:1px; right:1px; display:flex; gap:3px; flex-direction:row-reverse; z-index:10;">${tagsArr.join('')}</div>`;
-
-          let hClass = hStem.indexOf('/') !== -1 ? 'right-item stem-h small-stem-h' : 'right-item stem-h';
-          let eClass = eStem.indexOf('/') !== -1 ? 'right-item stem-e small-stem-e' : 'right-item stem-e';
-          
-          let innerHtml = '<div class="row"><div class="left-item deity deity-text">' + tDeity + '</div><div class="' + hClass + '">' + showHStem + '</div></div><div class="row"><div class="left-item star star-text">' + starName + '</div><div class="' + eClass + '">' + showEStem + '</div></div><div class="row"><div class="left-item ' + gateClass + ' gate-text">' + gateName + '</div><div class="right-item edeity-text">' + eDeity + '</div></div>';
-
-          if (showGeJu && pos !== 5) {
-            if (p.patterns && p.patterns.length > 0) {
-                let patHtml = p.patterns.map(pat => {
-                    let isJi = pat.type.includes('吉');
-                    let isXiong = pat.type.includes('凶');
-                    let color = isJi ? 'var(--c-gate-g)' : (isXiong ? 'var(--c-gate-r)' : 'var(--text-gold)');
-let bg = isJi ? 'rgba(34, 197, 94, 0.15)' : (isXiong ? 'rgba(220, 38, 38, 0.15)' : 'rgba(251, 191, 36, 0.15)');
-
-                    return `<div style="font-size:12px; font-weight:bold; color:${color}; background:${bg}; padding:2px 4px; border-radius:4px; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; letter-spacing:1px;">${pat.name}</div>`;
-                }).join('');
-                innerHtml = `<div style="display:flex; flex-direction:column; gap:4px; justify-content:center; width:100%; height:100%; z-index:20;">${patHtml}</div>`;
-            } else {
-                innerHtml = `<div style="opacity:0.1; filter:grayscale(100%);">${innerHtml}</div>`;
-            }
-          }
-
-          let tC = 'dz-top', bC = 'dz-bottom', lC = 'dz-left', rC = 'dz-right';
-          if (isCrowded && (pos === 4 || pos === 9 || pos === 2)) tC = 'dz-top dz-out-top';
-
-          let dzHtml = '';
-          if (pos === 1) dzHtml = `<div class="${bC}">子</div>`;
-          else if (pos === 2) dzHtml = `<div class="${tC}">未</div><div class="${rC}">申</div>`; 
-          else if (pos === 3) dzHtml = `<div class="${lC}">卯</div>`;
-          else if (pos === 4) dzHtml = `<div class="${tC}">巳</div><div class="${lC}">辰</div>`; 
-          else if (pos === 6) dzHtml = `<div class="${rC}">戌</div><div class="${bC}">亥</div>`;
-          else if (pos === 7) dzHtml = `<div class="${rC}">酉</div>`;
-          else if (pos === 8) dzHtml = `<div class="${bC}">丑</div><div class="${lC}">寅</div>`;
-          else if (pos === 9) dzHtml = `<div class="${tC}">午</div>`;
-
-          if (pos === 5) {
-            if (panType === 'fei') { 
-              gridHtml += '<div class="cell"><svg class="taichi-svg" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);opacity:0.06;z-index:0;" viewBox="0 0 100 100"><circle cx="50" cy="50" r="48" fill="#fff" stroke="var(--border-color)" stroke-width="1"/><path d="M 50 2 A 48 48 0 0 1 50 98 C 18 98, 18 50, 50 50 C 82 50, 82 2, 50 2 Z" fill="#000"/></svg>' + tagsHtml + dzHtml + '<div class="inner-content" style="z-index:1;">' + innerHtml + '</div><div class="palace-row" style="z-index:1;"><span>中5宫</span><span class="hidden-stem-text">' + hiddenStem + '</span></div></div>';
-            } else { 
-              gridHtml += '<div class="cell center-cell"><svg class="taichi-svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="48" fill="#fff" stroke="var(--border-color)" stroke-width="1"/><path d="M 50 2 A 48 48 0 0 1 50 98 C 18 98, 18 50, 50 50 C 82 50, 82 2, 50 2 Z" fill="#000"/><text x="50" y="26" dominant-baseline="central" font-family="-apple-system, sans-serif" font-size="25" font-weight="bold" fill="#000" text-anchor="middle">' + cH + '</text><text x="50" y="74" dominant-baseline="central" font-family="-apple-system, sans-serif" font-size="25" font-weight="bold" fill="#fff" text-anchor="middle">' + cE + '</text></svg></div>';
-            }
-          } else { 
-            gridHtml += '<div class="cell">' + tagsHtml + dzHtml + '<div class="inner-content">' + innerHtml + '</div><div class="palace-row"><span>' + guaMap[pos] + pos + '宫</span><span class="hidden-stem-text">' + hiddenStem + '</span></div></div>';
-          }
-
-        });
-        
-        document.getElementById('chartGrid').innerHTML = gridHtml;
-
-        // 每次重新起局或切换参数后，重新渲染当前的用神高亮状态
-        applyYongShenHighlight();
-
-        if (showGeJu && chart.globalPatterns && chart.globalPatterns.length > 0) {
-            setTimeout(() => {
-                showToast('⚠️ 警报：' + chart.globalPatterns[0].name + '（' + chart.globalPatterns[0].desc + '）');
-            }, 600);
-        }
-
-      } catch (err) { alert("排盘错误：" + err.message); }
-    }
-
-    function exportImage() {
-      const logo = document.querySelector('.circle-logo');
-      if (logo) { logo.innerText = '生成..'; logo.style.fontSize = '12px'; }
-      window.scrollTo(0, 0); 
-      const body = document.body; const originalOverflow = body.style.overflow; body.style.overflow = 'visible'; 
-      const scale = 4; const bg = getComputedStyle(body).backgroundColor || '#131520';
-
-      setTimeout(function () {
-        if (typeof html2canvas === 'undefined') {
-          body.style.overflow = originalOverflow; if (logo) { logo.innerText = '历'; logo.style.fontSize = '20px'; }
-          alert('截图组件未加载，请检查网络后刷新重试'); return;
-        }
-
-        html2canvas(body, { backgroundColor: bg, scale: scale, useCORS: true, allowTaint: true, logging: false, scrollX: 0, scrollY: -window.scrollY, width: body.scrollWidth, height: body.scrollHeight, windowWidth: body.scrollWidth, windowHeight: body.scrollHeight, x: 0, y: 0,
-          onclone: function(clonedDoc) {
-            const clonedLogo = clonedDoc.querySelector('.circle-logo'); if (clonedLogo) { clonedLogo.innerText = '历'; clonedLogo.style.fontSize = '20px'; }
-            const clonedInputs = clonedDoc.querySelectorAll('.zhen-item select, .zhen-item input'); clonedInputs.forEach(el => { el.style.lineHeight = 'normal'; el.style.padding = '0'; el.style.margin = '0'; });
-          }
-        }).then(function (canvas) {
-          body.style.overflow = originalOverflow; if (logo) { logo.innerText = '历'; logo.style.fontSize = '20px'; }
-          canvas.toBlob(function (blob) {
-            if (!blob) { alert('生成图片失败，请重试'); return; }
-            const fileName = 'OOGO_' + new Date().toLocaleString().replace(/[\/:]/g, '-') + '.png';
-            const url = URL.createObjectURL(blob);
-            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-            const isWechat = /MicroMessenger/i.test(navigator.userAgent);
-
-            if (isMobile) {
-              const file = new File([blob], fileName, { type: 'image/png' });
-              if (!isWechat && navigator.canShare && navigator.canShare({ files: [file] })) {
-                navigator.share({ files: [file], title: 'OOGO奇门', text: 'OOGO奇门遁甲截图' }).then(() => { showToast('✅ 保存成功'); }).catch((error) => { console.log('用户取消或分享失败', error); }); return; 
-              }
-              const overlay = document.createElement('div'); overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:999999;display:flex;flex-direction:column;align-items:center;justify-content:center;';
-              const tip = document.createElement('div'); tip.innerText = '👉 请长按下方图片保存或分享 👈'; tip.style.cssText = 'color:#e2b45f;font-size:16px;margin-bottom:15px;font-weight:bold;letter-spacing:1px;';
-              const img = document.createElement('img'); img.src = url; img.style.cssText = 'max-width:90%;max-height:80%;border-radius:8px;box-shadow:0 0 15px rgba(226,180,95,0.3);';
-              const closeBtn = document.createElement('div'); closeBtn.innerText = '✕ 关闭'; closeBtn.style.cssText = 'color:#fff;margin-top:20px;padding:8px 24px;border:1px solid #7a7a90;border-radius:20px;font-size:14px;cursor:pointer;';
-              closeBtn.onclick = function() { document.body.removeChild(overlay); setTimeout(function () { URL.revokeObjectURL(url); }, 100); };
-              overlay.appendChild(tip); overlay.appendChild(img); overlay.appendChild(closeBtn); document.body.appendChild(overlay);
-              showToast('✅ 图片生成成功，请长按保存');
-            } else {
-              const a = document.createElement('a'); a.href = url; a.download = fileName; a.style.display = 'none'; document.body.appendChild(a); a.click(); document.body.removeChild(a); setTimeout(function () { URL.revokeObjectURL(url); }, 2000); showToast('✅ 图片已开始下载');
-            }
-          }, 'image/png', 0.92);
-        }).catch(function (err) {
-          body.style.overflow = originalOverflow; if (logo) { logo.innerText = '历'; logo.style.fontSize = '20px'; }
-          alert('生成图片失败：' + (err && err.message ? err.message : '未知错误'));
-        });
-      }, 150);
-    }
-
-    function showToast(msg) {
-      const old = document.getElementById('qimenToast'); if (old) old.remove();
-      const toast = document.createElement('div'); toast.id = 'qimenToast'; toast.innerText = msg;
-      toast.style.cssText = 'position:fixed;left:50%;bottom:80px;transform:translateX(-50%);background:rgba(0,0,0,0.8);color:#fff;padding:10px 18px;border-radius:20px;font-size:14px;z-index:100000;pointer-events:none;white-space:nowrap;box-shadow:0 4px 6px rgba(0,0,0,0.3);';
-      document.body.appendChild(toast); setTimeout(function () { toast.remove(); }, 2500);
-    }
-  </script>
-</body>
-</html>
+if (typeof window !== "undefined") {
+  window.OogoQimen = OogoQimen; window.OogoZhiRun = OogoZhiRun; window.OogoChaiBu = OogoChaiBu;
+  window.OogoMaoShan = OogoMaoShan; window.OogoZhuanPan = OogoZhuanPan; window.OogoFeiPan = OogoFeiPan;
+  window.OogoGeJu = OogoGeJu; window.OogoZhuanPanEnhancer = OogoZhuanPanEnhancer;
+}
