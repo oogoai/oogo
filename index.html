@@ -689,11 +689,11 @@ if (showChangSheng && pos !== 5) {
           if (origGate === '中门') gateClass = 'gate-g';
 
           let tagsArr = [];
-          if (p.uiTagJx) tagsArr.push('<span class="tag-jx">刑</span>');
-          if (p.uiTagPo) tagsArr.push('<span class="tag-po">迫</span>');
+        if (p.uiTagKong) tagsArr.push('<span class="tag-kong">空</span>');
+         if (p.uiTagMa) tagsArr.push('<span class="tag-ma">马</span>');         
           if (p.uiTagMu) tagsArr.push('<span class="tag-mu">墓</span>');
-          if (p.uiTagMa) tagsArr.push('<span class="tag-ma">马</span>');
-          if (p.uiTagKong) tagsArr.push('<span class="tag-kong">空</span>');
+           if (p.uiTagPo) tagsArr.push('<span class="tag-po">迫</span>');
+          if (p.uiTagJx) tagsArr.push('<span class="tag-jx">刑</span>');  
 
           let isCrowded = tagsArr.length >= 3; 
           let tagsHtml = '';
