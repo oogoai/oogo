@@ -667,7 +667,7 @@ const OogoGeJu = {
 
     "开门休门": { name: "开加休", type: "吉", desc: "主见贵人，利于求谋、求财。" },
     "开门生门": { name: "开加生", type: "大吉", desc: "主见贵人，求财大吉，创业顺利。" },
-    "开门伤门": { name: "开门伤", type: "凶", desc: "主变动、失物，谋事多有阻隔。" },
+    "开门伤门": { name: "开加伤", type: "凶", desc: "主变动、失物，谋事多有阻隔。" },
     "开门杜门": { name: "开加杜", type: "凶", desc: "主失物难寻，有逃避之事。" },
     "开门景门": { name: "开加景", type: "平", desc: "主见贵人，但文书之事多有不利。" },
     "开门死门": { name: "开加死", type: "凶", desc: "主官司惊忧，事业受阻。" },
@@ -876,18 +876,6 @@ const OogoZhuanPan = {
     const gateInfo = OogoZhuanMen.build(origXunPalace, xun.branch, timeBranch, isYang);
     const heavenDeities = OogoTianShen.build(starInfo.zhiFuPalace, isYang);
     const earthDeities = OogoDiShen.build(origXunPalace, isYang);
-
-    const hiddenStemsMap = new Map();
-    const qimenStems = ["戊", "己", "庚", "辛", "壬", "癸", "丁", "丙", "乙"];
-    // ============================================================
-// 暗干 / 隐干
-// 传统时干加值使法：
-// 1. 时干正常加值使门落宫
-// 2. 若“时干”恰好等于“值使落宫的地盘干”
-//    则采用特殊法：时干入中五宫
-// 3. 阳遁顺飞，阴遁逆飞
-// 4. 干序：戊己庚辛壬癸丁丙乙
-// ============================================================
 
 const hiddenStemsMap = new Map();
 
