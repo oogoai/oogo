@@ -879,19 +879,68 @@ const OogoZhuanPan = {
 
     const hiddenStemsMap = new Map();
     const qimenStems = ["戊", "己", "庚", "辛", "壬", "癸", "丁", "丙", "乙"];
-    const hiddenTimeStem = timeStem === "甲" ? xun.stem : timeStem;
-    const tsIdx = qimenStems.indexOf(hiddenTimeStem);
+    // ============================================================
+// 暗干 / 隐干
+// 传统时干加值使法：
+// 1. 时干正常加值使门落宫
+// 2. 若“时干”恰好等于“值使落宫的地盘干”
+//    则采用特殊法：时干入中五宫
+// 3. 阳遁顺飞，阴遁逆飞
+// 4. 干序：戊己庚辛壬癸丁丙乙
+// ============================================================
 
-    if (tsIdx !== -1) {
-      let zsTargetPalace = gateInfo.zhiShiPalace;
-      for (let i = 0; i < 9; i++) {
-        let landPalace = isYang ? (zsTargetPalace + i) : (zsTargetPalace - i);
-        while (landPalace > 9) landPalace -= 9;
-        while (landPalace < 1) landPalace += 9;
-        hiddenStemsMap.set(landPalace, qimenStems[(tsIdx + i) % 9]);
-      }
-    }
-    chart.hiddenStems = hiddenStemsMap;
+const hiddenStemsMap = new Map();
+
+const qimenStems = [
+  "戊", "己", "庚", "辛", "壬",
+  "癸", "丁", "丙", "乙"
+];
+
+const hiddenTimeStem = timeStem === "甲"
+  ? xun.stem
+  : timeStem;
+
+const tsIdx = qimenStems.indexOf(hiddenTimeStem);
+
+if (tsIdx !== -1) {
+
+  // 值使所在宫
+  const zsTargetPalace = gateInfo.zhiShiPalace;
+
+  // 值使宫的地盘干
+  const zhiShiEarthStem = earthStems[zsTargetPalace];
+
+  // ----------------------------------------------------------
+  // 特殊情况：
+  // 如果时干 = 值使宫地盘干
+  // 则时干入中五宫
+  // ----------------------------------------------------------
+  const hiddenStartPalace =
+    hiddenTimeStem === zhiShiEarthStem
+      ? 5
+      : zsTargetPalace;
+
+  // ----------------------------------------------------------
+  // 阳遁顺飞
+  // 阴遁逆飞
+  // ----------------------------------------------------------
+  for (let i = 0; i < 9; i++) {
+
+    let landPalace = isYang
+      ? (hiddenStartPalace + i)
+      : (hiddenStartPalace - i);
+
+    while (landPalace > 9) landPalace -= 9;
+    while (landPalace < 1) landPalace += 9;
+
+    hiddenStemsMap.set(
+      landPalace,
+      qimenStems[(tsIdx + i) % 9]
+    );
+  }
+}
+
+chart.hiddenStems = hiddenStemsMap;
 
     const palaces = [];
     for (const position of QimenConst.PALACES) {
