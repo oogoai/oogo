@@ -855,6 +855,14 @@ let bg = isJi ? 'rgba(34, 197, 94, 0.15)' : (isXiong ? 'rgba(220, 38, 38, 0.15)'
       toast.style.cssText = 'position:fixed;left:50%;bottom:80px;transform:translateX(-50%);background:rgba(0,0,0,0.8);color:#fff;padding:10px 18px;border-radius:20px;font-size:14px;z-index:100000;pointer-events:none;white-space:nowrap;box-shadow:0 4px 6px rgba(0,0,0,0.3);';
       document.body.appendChild(toast); setTimeout(function () { toast.remove(); }, 2500);
     }
-  </script>
+  <script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js')
+        .then(reg => console.log('Service Worker 注册成功，已开启离线运行能力'))
+        .catch(err => console.error('SW 注册失败:', err));
+    });
+  }
+</script>
 </body>
 </html>
