@@ -143,6 +143,12 @@
     .center-cell { background: var(--cell-bg); display: flex; justify-content: center; align-items: center; position: relative; transition: background 0.3s; }
     
     .hidden-stem-text { color: var(--dark-stem-color); font-weight: bold; font-size: 13px; }
+    .center-hidden-stem {
+    position: absolute;
+    right: 12px;
+    bottom: 6px;
+    z-index: 20;
+}
     .palace-row { position: absolute; bottom: 6px; left: 12px; right: 20px; border-top: 1px dashed var(--border-color); padding-top: 4px; display: flex; justify-content: space-between; align-items: center; color: var(--palace-text); font-size: 13px; z-index: 10; }
     .inner-content { position: absolute; top: 45%; left: 50%; transform: translate(-50%, -50%); width: calc(100% - 40px); display: flex; flex-direction: column; gap: 9px; z-index: 10; }
     
@@ -737,8 +743,42 @@ let bg = isJi ? 'rgba(34, 197, 94, 0.15)' : (isXiong ? 'rgba(220, 38, 38, 0.15)'
             if (panType === 'fei') { 
               gridHtml += '<div class="cell"><svg class="taichi-svg" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);opacity:0.06;z-index:0;" viewBox="0 0 100 100"><circle cx="50" cy="50" r="48" fill="#fff" stroke="var(--border-color)" stroke-width="1"/><path d="M 50 2 A 48 48 0 0 1 50 98 C 18 98, 18 50, 50 50 C 82 50, 82 2, 50 2 Z" fill="#000"/></svg>' + tagsHtml + dzHtml + '<div class="inner-content" style="z-index:1;">' + innerHtml + '</div><div class="palace-row" style="z-index:1;"><span>中5宫</span><span class="hidden-stem-text">' + hiddenStem + '</span></div></div>';
             } else { 
-              gridHtml += '<div class="cell center-cell"><svg class="taichi-svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="48" fill="#fff" stroke="var(--border-color)" stroke-width="1"/><path d="M 50 2 A 48 48 0 0 1 50 98 C 18 98, 18 50, 50 50 C 82 50, 82 2, 50 2 Z" fill="#000"/><text x="50" y="26" dominant-baseline="central" font-family="-apple-system, sans-serif" font-size="25" font-weight="bold" fill="#000" text-anchor="middle">' + cH + '</text><text x="50" y="74" dominant-baseline="central" font-family="-apple-system, sans-serif" font-size="25" font-weight="bold" fill="#fff" text-anchor="middle">' + cE + '</text></svg></div>';
-            }
+  gridHtml += `
+    <div class="cell center-cell">
+
+      <svg class="taichi-svg" viewBox="0 0 100 100">
+        <circle cx="50" cy="50" r="48"
+          fill="#fff"
+          stroke="var(--border-color)"
+          stroke-width="1"/>
+
+        <path d="M 50 2 A 48 48 0 0 1 50 98
+                 C 18 98, 18 50, 50 50
+                 C 82 50, 82 2, 50 2 Z"
+          fill="#000"/>
+
+        <text x="50" y="26"
+          dominant-baseline="central"
+          font-family="-apple-system, sans-serif"
+          font-size="25"
+          font-weight="bold"
+          fill="#000"
+          text-anchor="middle">${cH}</text>
+
+        <text x="50" y="74"
+          dominant-baseline="central"
+          font-family="-apple-system, sans-serif"
+          font-size="25"
+          font-weight="bold"
+          fill="#fff"
+          text-anchor="middle">${cE}</text>
+      </svg>
+
+      <!-- 中宫暗干：与其他八宫统一放右下角 -->
+      <span class="hidden-stem-text center-hidden-stem">${hiddenStem || ''}</span>
+
+    </div>`;
+}
           } else { 
             gridHtml += '<div class="cell">' + tagsHtml + dzHtml + '<div class="inner-content">' + innerHtml + '</div><div class="palace-row"><span>' + guaMap[pos] + pos + '宫</span><span class="hidden-stem-text">' + hiddenStem + '</span></div></div>';
           }
